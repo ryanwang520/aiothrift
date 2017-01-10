@@ -6,13 +6,12 @@ import functools
 from aioredis import ConnectionClosedError
 from thriftpy.thrift import TMessageType, TApplicationException
 
-from aiothrift.protocol import TBinaryProtocolFactory
+from aiothrift.protocol import TBinaryProtocol
 from aiothrift.util import args2kwargs
 
 
 @asyncio.coroutine
-def create_connection(service, address, *, iproto_factory=TBinaryProtocolFactory(),
-                      oproto_factory=None,
+def create_connection(service, address, *, protocol_cls=TBinaryProtocol,
                       timeout, loop=None):
     host, port = address
     reader, writer = yield from asyncio.open_connection(
@@ -20,13 +19,10 @@ def create_connection(service, address, *, iproto_factory=TBinaryProtocolFactory
     sock = writer.transport.get_extra_info('socket')
     address = sock.getpeername()
     address = tuple(address[:2])
-    if oproto_factory is None:
-        oproto_factory = iproto_factory
-    iprotocol = iproto_factory.get_protocol(reader)
-    oprotocol = oproto_factory.get_protocol(writer)
+    iprotocol = protocol_cls(reader)
+    oprotocol = protocol_cls(writer)
 
-    return ThriftConnection(service, iprot=iprotocol,
-                            oprot=oprotocol,
+    return ThriftConnection(service, iprot=iprotocol, oprot=oprotocol,
                             address=address, loop=loop, timeout=timeout)
 
 

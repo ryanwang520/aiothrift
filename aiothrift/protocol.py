@@ -414,16 +414,3 @@ class TBinaryProtocol(object):
 
     def write_struct(self, obj):
         write_val(self.trans, TType.STRUCT, obj)
-
-
-class TBinaryProtocolFactory(object):
-    def __init__(self, strict_read=True, strict_write=True,
-                 decode_response=True):
-        self.strict_read = strict_read
-        self.strict_write = strict_write
-        self.decode_response = decode_response
-
-    def get_protocol(self, trans):
-        return TBinaryProtocol(trans,
-                               self.strict_read, self.strict_write,
-                               self.decode_response)
