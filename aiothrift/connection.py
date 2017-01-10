@@ -3,11 +3,11 @@ import async_timeout
 
 import functools
 
-from aioredis import ConnectionClosedError
 from thriftpy.thrift import TMessageType, TApplicationException
 
-from aiothrift.protocol import TBinaryProtocol
-from aiothrift.util import args2kwargs
+from .protocol import TBinaryProtocol
+from .util import args2kwargs
+from .errors import ConnectionClosedError
 
 
 @asyncio.coroutine

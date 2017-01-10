@@ -25,6 +25,7 @@ class Server:
         writer.close()
 
 
+@asyncio.coroutine
 def make_server(service, handler,
                 host="localhost", port=9090,
                 loop=None,
@@ -33,5 +34,6 @@ def make_server(service, handler,
     processor = TProcessor(service, handler)
     if loop is None:
         loop = asyncio.get_event_loop()
-    coro = asyncio.start_server(Server(processor, protocol_cls), host, port, loop=loop)
-    return loop.run_until_complete(coro)
+    server = yield from asyncio.start_server(
+        Server(processor, protocol_cls), host, port, loop=loop)
+    return server

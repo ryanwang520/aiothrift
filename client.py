@@ -4,12 +4,6 @@ import aiothrift
 
 pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
 
-
-class Dispatcher(object):
-    def ping(self):
-        return "pong"
-
-
 loop = asyncio.get_event_loop()
 
 

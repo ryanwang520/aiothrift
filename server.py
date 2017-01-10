@@ -17,12 +17,14 @@ class Dispatcher(object):
 
 loop = asyncio.get_event_loop()
 
-server = make_server(pingpong_thrift.PingPong, Dispatcher(), '127.0.0.1', 6000, loop=loop)
+server = loop.run_until_complete(
+    make_server(pingpong_thrift.PingPong, Dispatcher(), '127.0.0.1', 6000, loop=loop))
 
 try:
     loop.run_forever()
 except KeyboardInterrupt:
     pass
+
 server.close()
 loop.run_until_complete(server.wait_closed())
 loop.close()
