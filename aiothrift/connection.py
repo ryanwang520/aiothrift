@@ -35,10 +35,10 @@ class ThriftConnection:
         self.timeout = timeout
         self.address = address
         self.closed = False
-        self._init_rpc_apis()
         self._oprot = oprot
         self._iprot = iprot
         self._seqid = 0
+        self._init_rpc_apis()
 
     def _init_rpc_apis(self):
         for api in self.service.thrift_services:

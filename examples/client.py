@@ -15,3 +15,4 @@ async def go():
 
 
 loop.run_until_complete(go())
+loop.close()

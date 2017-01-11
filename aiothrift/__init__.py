@@ -3,3 +3,6 @@ from .errors import (
     ConnectionClosedError
 )
 
+
+__version__ = '0.0.1'
+
