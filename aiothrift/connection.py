@@ -16,7 +16,7 @@ MAX_SEQID = 2 ** 16
 
 @asyncio.coroutine
 def create_connection(service, address, *, protocol_cls=TBinaryProtocol,
-                      timeout, loop=None):
+                      timeout=None, loop=None):
     host, port = address
     reader, writer = yield from asyncio.open_connection(
         host, port, loop=loop)
