@@ -2,9 +2,10 @@ import asyncio
 
 from thriftpy.transport import TTransportException
 
-from aiothrift.processor import TProcessor
-from aiothrift.protocol import TBinaryProtocol
-from aiothrift.transport import TTransport
+from .log import logger
+from .processor import TProcessor
+from .protocol import TBinaryProtocol
+from .transport import TTransport
 
 
 class Server:
@@ -21,9 +22,11 @@ class Server:
             try:
                 yield from self.processor.process(iproto, oproto)
             except TTransportException:
+                logger.debug('transport exception')
                 writer.close()
             except Exception:
                 # app exception
+                logger.exception('un handled app exception')
                 writer.close()
         writer.close()
 

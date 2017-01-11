@@ -90,7 +90,7 @@ class ThriftConnection:
         if rseqid != self._seqid:
             # transport should be closed if bad seq happened
             self.close()
-            TApplicationException(TApplicationException.BAD_SEQUENCE_ID,
+            raise TApplicationException(TApplicationException.BAD_SEQUENCE_ID,
                                   fname + ' failed: out of sequence response')
 
         if mtype == TMessageType.EXCEPTION:
