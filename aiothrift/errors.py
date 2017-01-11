@@ -5,5 +5,6 @@ class ThriftError(Exception):
 class ConnectionClosedError(ThriftError):
     """Raised if connection to server was closed."""
 
+
 class PoolClosedError(ThriftError):
     pass

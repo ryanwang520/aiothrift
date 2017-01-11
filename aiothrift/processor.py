@@ -60,7 +60,7 @@ class TProcessor(object):
                 setattr(result, exc_name, e)
                 break
         else:
-            raise
+            raise e
 
     @asyncio.coroutine
     def process(self, iprot, oprot):

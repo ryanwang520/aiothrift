@@ -1,3 +1,4 @@
+import sys
 import asyncio
 import async_timeout
 
@@ -10,8 +11,6 @@ from aiothrift.transport import TTransport
 from .protocol import TBinaryProtocol
 from .util import args2kwargs
 from .errors import ConnectionClosedError
-
-MAX_SEQID = 2 ** 16
 
 
 @asyncio.coroutine
@@ -61,7 +60,7 @@ class ThriftConnection:
             result_cls = getattr(self.service, api + "_result")
 
             self._seqid += 1
-            if self._seqid == MAX_SEQID:
+            if self._seqid == sys.maxsize:
                 self._seqid = 0
 
             self._oprot.write_message_begin(api, TMessageType.CALL, self._seqid)
@@ -91,7 +90,7 @@ class ThriftConnection:
             # transport should be closed if bad seq happened
             self.close()
             raise TApplicationException(TApplicationException.BAD_SEQUENCE_ID,
-                                  fname + ' failed: out of sequence response')
+                                        fname + ' failed: out of sequence response')
 
         if mtype == TMessageType.EXCEPTION:
             x = TApplicationException()
