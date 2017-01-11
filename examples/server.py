@@ -6,7 +6,7 @@ from aiothrift.server import make_server
 pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
 
 
-class Dispatcher(object):
+class Dispatcher:
     def ping(self):
         return "pong"
 
