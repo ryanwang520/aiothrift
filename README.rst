@@ -3,9 +3,6 @@ aiothrift
 
 Asyncio implementation for thrift protocol, which is heavily based on thriftpy_.
 
-.. image:: https://travis-ci.org/moonshadow/aiothrift.svg?branch=master
-   :target: https://travis-ci.org/moonshadow/aiothrift
-
 
 This project is still in early develop state and thus is not recommended for production usage.
 
@@ -78,6 +75,29 @@ Client
         print(await conn.ping())
         print(await conn.add(5, 6))
         conn.close()
+
+    loop.run_until_complete(go())
+    loop.close()
+
+Or use ConnectionPool
+^^^^^^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+    import thriftpy
+    import asyncio
+    import aiothrift
+
+    loop = asyncio.get_event_loop()
+    pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
+
+    async def go():
+        pool = await aiothrift.create_pool(pingpong_thrift.PingPong,
+            ('127.0.0.1', 6000), loop=loop, timeout=2)
+        async with pool.get() as conn:
+            print(await conn.ping())
+            print(await conn.add(5, 6))
+        pool.close()
 
     loop.run_until_complete(go())
     loop.close()
