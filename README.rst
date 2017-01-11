@@ -1,10 +1,27 @@
-work in progress, there would be a first viable version soon.
-======================
+aiothrift
+=========
 
-For the impatient guys, below is a simple demo of usage.
+Asyncio implementation for thrift protocol, which is heavily based on thriftpy_.
+
+.. image:: https://travis-ci.org/moonshadow/aiothrift.svg?branch=master
+   :target: https://travis-ci.org/moonshadow/aiothrift
 
 
-create 'pingpong.thrift' file:
+This project is still in early develop state and thus is not recommended for production usage.
+
+Installation
+------------
+
+::
+
+    $ pip install aiothrift
+
+
+Usage example
+-------------
+
+Thrift file
+^^^^^^^^^^^
 
 ::
 
@@ -13,7 +30,9 @@ create 'pingpong.thrift' file:
         i64 add(1:i32 a, 2:i64 b),
     }
 
-Then we can make a server:
+
+Server
+^^^^^^
 
 .. code:: python
 
@@ -23,7 +42,7 @@ Then we can make a server:
 
     pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
 
-    class Dispatcher(object):
+    class Dispatcher:
         def ping(self):
             return "pong"
 
@@ -42,7 +61,8 @@ Then we can make a server:
     loop.run_until_complete(server.wait_closed())
     loop.close()
 
-And a client:
+Client
+^^^^^^
 
 .. code:: python
 
@@ -60,6 +80,24 @@ And a client:
         conn.close()
 
     loop.run_until_complete(go())
+    loop.close()
 
 
-pretty cool.
+It's just that simple to begin with ``aiothrift``, and you are not forced to use ``aiothrift`` on both server and client side.
+So if you already have a normal thrift server setup, feel free to create an async thrift client to communicate with that server.
+
+Requirements
+------------
+
+- Python >= 3.4.2
+- async-timeout_
+- thriftpy_
+
+.. _async-timeout: https://pypi.python.org/pypi/async_timeout
+.. _thriftpy: https://thriftpy.readthedocs.org/en/latest/
+
+
+LICENSE
+-------
+
+``aiothrift`` is offered under the MIT license.

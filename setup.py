@@ -21,6 +21,8 @@ def read(name):
 with open('requirements.txt') as f:
     REQUIREMENTS = list(map(lambda l: l.strip(), f.readlines()))
 
+long_description='\n\n'.join([read('README.rst'), read('CHANGES.rst')])
+print(long_description)
 setup(name='aiothrift',
       version=version,
       description='async thrift server and client',

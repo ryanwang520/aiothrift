@@ -1,6 +1,7 @@
 include LICENSE
 include CHANGES.rst
 include README.rst
+include requirements.txt
 graft aiothrift
 global-exclude *.pyc *.swp
 recursive-include examples *.py
