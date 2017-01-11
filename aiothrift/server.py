@@ -21,9 +21,10 @@ class Server:
             try:
                 yield from self.processor.process(iproto, oproto)
             except TTransportException:
-                pass
+                writer.close()
             except Exception:
-                pass
+                # app exception
+                writer.close()
         writer.close()
 
 
