@@ -4,10 +4,14 @@ import async_timeout
 import functools
 
 from thriftpy.thrift import TMessageType, TApplicationException
+from thriftpy.transport import TTransportException
 
+from aiothrift.transport import TTransport
 from .protocol import TBinaryProtocol
 from .util import args2kwargs
 from .errors import ConnectionClosedError
+
+MAX_SEQID = 2 ** 16
 
 
 @asyncio.coroutine
@@ -19,7 +23,8 @@ def create_connection(service, address, *, protocol_cls=TBinaryProtocol,
     sock = writer.transport.get_extra_info('socket')
     address = sock.getpeername()
     address = tuple(address[:2])
-    iprotocol = protocol_cls(reader)
+    itransport = TTransport(reader)
+    iprotocol = protocol_cls(itransport)
     oprotocol = protocol_cls(writer)
 
     return ThriftConnection(service, iprot=iprotocol, oprot=oprotocol,
@@ -46,14 +51,18 @@ class ThriftConnection:
 
     @asyncio.coroutine
     def _send_call(self, api, *args, **kwargs):
-        with async_timeout.timeout(self.timeout):
-            if self._reader is None or self._reader.at_eof():
-                raise ConnectionClosedError('Connection closed')
+        if self.closed:
+            raise ConnectionClosedError('Connection closed')
 
+        with async_timeout.timeout(self.timeout):
             _kw = args2kwargs(getattr(self.service, api + "_args").thrift_spec,
                               *args)
             kwargs.update(_kw)
             result_cls = getattr(self.service, api + "_result")
+
+            self._seqid += 1
+            if self._seqid == MAX_SEQID:
+                self._seqid = 0
 
             self._oprot.write_message_begin(api, TMessageType.CALL, self._seqid)
             args = getattr(self.service, api + '_args')()
@@ -66,12 +75,24 @@ class ThriftConnection:
             # writer.write
             # wait result only if non-oneway
             if not getattr(result_cls, "oneway"):
-                result = yield from self._recv(api)
+                try:
+                    result = yield from self._recv(api)
+                except TTransportException as e:
+                    # handle EOF
+                    if e.type == TTransportException.END_OF_FILE:
+                        self.close()
+                    raise
                 return result
 
     @asyncio.coroutine
     def _recv(self, api):
         fname, mtype, rseqid = yield from self._iprot.read_message_begin()
+        if rseqid != self._seqid:
+            # transport should be closed if bad seq happened
+            self.close()
+            TApplicationException(TApplicationException.BAD_SEQUENCE_ID,
+                                  fname + ' failed: out of sequence response')
+
         if mtype == TMessageType.EXCEPTION:
             x = TApplicationException()
             yield from self._iprot.read_struct(x)

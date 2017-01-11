@@ -4,6 +4,7 @@ from thriftpy.transport import TTransportException
 
 from aiothrift.processor import TProcessor
 from aiothrift.protocol import TBinaryProtocol
+from aiothrift.transport import TTransport
 
 
 class Server:
@@ -13,7 +14,8 @@ class Server:
 
     @asyncio.coroutine
     def __call__(self, reader, writer):
-        iproto = self.protocol_cls(reader)
+        itransport = TTransport(reader)
+        iproto = self.protocol_cls(itransport)
         oproto = self.protocol_cls(writer)
         while not reader.at_eof():
             try:
