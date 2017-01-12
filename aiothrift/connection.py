@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import sys
 
 import async_timeout
 from thriftpy.thrift import TMessageType, TApplicationException
@@ -14,7 +13,7 @@ from .log import logger
 
 
 @asyncio.coroutine
-def create_connection(service, address, *, protocol_cls=TBinaryProtocol,
+def create_connection(service, address=('127.0.0.1', 6000), *, protocol_cls=TBinaryProtocol,
                       timeout=None, loop=None):
     host, port = address
     reader, writer = yield from asyncio.open_connection(
@@ -32,7 +31,7 @@ class ThriftConnection:
         self.service = service
         self._reader = iprot.trans
         self._writer = oprot.trans
-        self.loop = loop
+        self._loop = loop
         self.timeout = timeout
         self.address = address
         self.closed = False
@@ -43,24 +42,25 @@ class ThriftConnection:
 
     def _init_rpc_apis(self):
         for api in self.service.thrift_services:
-            setattr(self, api, functools.partial(self._send_call, api))
+            if not hasattr(self, api):
+                setattr(self, api, functools.partial(self.execute, api))
+            else:
+                logger.warn(
+                    'api name {0} is conflicted with connection attribute '
+                    '{0}, while you can still call this api by `send_call("{0}")`'.format(api))
 
     @asyncio.coroutine
-    def _send_call(self, api, *args, **kwargs):
+    def execute(self, api, *args, **kwargs):
         if self.closed:
             raise ConnectionClosedError('Connection closed')
 
         try:
             with async_timeout.timeout(self.timeout):
-                _kw = args2kwargs(getattr(self.service, api + "_args").thrift_spec,
-                                  *args)
-                kwargs.update(_kw)
+                kw = args2kwargs(getattr(self.service, api + "_args").thrift_spec, *args)
+                kwargs.update(kw)
                 result_cls = getattr(self.service, api + "_result")
 
                 self._seqid += 1
-                if self._seqid == sys.maxsize:
-                    self._seqid = 0
-
                 self._oprot.write_message_begin(api, TMessageType.CALL, self._seqid)
                 args = getattr(self.service, api + '_args')()
                 for k, v in kwargs.items():
@@ -73,8 +73,6 @@ class ThriftConnection:
                     logger.debug('connection error {}'.format(str(e)))
                     raise ConnectionClosedError('the server has closed this connection')
 
-                # writer.write
-                # wait result only if non-oneway
                 if not getattr(result_cls, "oneway"):
                     result = yield from self._recv(api)
                     return result
@@ -109,7 +107,7 @@ class ThriftConnection:
 
         # check throws
         for k, v in result.__dict__.items():
-            if k != "success" and v:
+            if k != 'success' and v:
                 raise v
         if hasattr(result, 'success'):
             raise TApplicationException(TApplicationException.MISSING_RESULT)

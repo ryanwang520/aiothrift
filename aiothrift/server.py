@@ -32,18 +32,19 @@ class Server:
                 writer.close()
             except Exception:
                 # app exception
-                logger.exception('un handled app exception')
+                logger.exception('unhandled app exception')
                 writer.close()
         writer.close()
 
 
 @asyncio.coroutine
 def make_server(service, handler,
-                host="localhost", port=9090,
+                address,
                 loop=None,
                 protocol_cls=TBinaryProtocol,
                 timeout=None
                 ):
+    host, port = address
     processor = TProcessor(service, handler)
     if loop is None:
         loop = asyncio.get_event_loop()

@@ -14,8 +14,11 @@ async def go():
     conn.close()
 
 
-async def go_pool():
-    pool = await aiothrift.create_pool(pingpong_thrift.PingPong, ('127.0.0.1', 6000), loop=loop, timeout=1)
+async def create_pool():
+    return await aiothrift.create_pool(pingpong_thrift.PingPong, ('127.0.0.1', 6000), loop=loop, timeout=1)
+
+
+async def run_pool(pool):
     try:
         async with pool.get() as conn:
             print(await conn.add(5, 6))
@@ -25,10 +28,16 @@ async def go_pool():
 
     async with pool.get() as conn:
         print(await conn.ping())
-    pool.close()
-    await pool.wait_closed()
 
 
 loop.run_until_complete(go())
-loop.run_until_complete(go_pool())
+pool = loop.run_until_complete(create_pool())
+tasks = []
+for i in range(10):
+    tasks.append(asyncio.ensure_future(run_pool(pool)))
+
+loop.run_until_complete(asyncio.gather(*tasks))
+pool.close()
+loop.run_until_complete(pool.wait_closed())
+
 loop.close()

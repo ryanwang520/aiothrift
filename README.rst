@@ -49,7 +49,7 @@ Server
 
     loop = asyncio.get_event_loop()
     server = loop.run_until_complete(
-        make_server(pingpong_thrift.PingPong, Dispatcher(), '127.0.0.1', 6000, loop=loop))
+        make_server(pingpong_thrift.PingPong, Dispatcher(), ('127.0.0.1', 6000), loop=loop))
     try:
         loop.run_forever()
     except KeyboardInterrupt:

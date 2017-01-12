@@ -6,7 +6,6 @@ from thriftpy.protocol.exc import TProtocolException
 from thriftpy.thrift import TType
 
 VERSION_MASK = -65536
-# VERSION_1 = 0x80010000
 VERSION_1 = -2147418112
 TYPE_MASK = 0x000000ff
 
