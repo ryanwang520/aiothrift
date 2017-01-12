@@ -1,6 +1,9 @@
 import asyncio
 
 from thriftpy.thrift import TType, TApplicationException, TMessageType
+from thriftpy.transport import TTransportException
+
+from .log import logger
 
 
 class TProcessor(object):
@@ -37,18 +40,27 @@ class TProcessor(object):
 
         return api, seqid, result, call
 
+    @asyncio.coroutine
     def send_exception(self, oprot, api, exc, seqid):
         oprot.write_message_begin(api, TMessageType.EXCEPTION, seqid)
         exc.write(oprot)
         oprot.write_message_end()
-        oprot.trans.drain()
+        yield from self.flush(oprot)
+
+    @asyncio.coroutine
+    def flush(self, oprot):
+        try:
+            yield from oprot.trans.drain()
+        except ConnectionError as e:
+            logger.debug('connection error')
+            raise TTransportException(type, str(e))
 
     @asyncio.coroutine
     def send_result(self, oprot, api, result, seqid):
         oprot.write_message_begin(api, TMessageType.REPLY, seqid)
         result.write(oprot)
         oprot.write_message_end()
-        yield from oprot.trans.drain()
+        yield from self.flush(oprot)
 
     def handle_exception(self, e, result):
         for k in sorted(result.thrift_spec):
@@ -67,8 +79,8 @@ class TProcessor(object):
         api, seqid, result, call = yield from self.process_in(iprot)
 
         if isinstance(result, TApplicationException):
-            return self.send_exception(oprot, api, result, seqid)
-
+            yield from self.send_exception(oprot, api, result, seqid)
+            return
         try:
             result.success = yield from call()
         except Exception as e:
