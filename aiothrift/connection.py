@@ -80,15 +80,9 @@ class ThriftConnection:
                 # writer.write
                 # wait result only if non-oneway
                 if not getattr(result_cls, "oneway"):
-                    try:
-                        result = yield from self._recv(api)
-                    except TTransportException as e:
-                        # handle EOF
-                        if e.type == TTransportException.END_OF_FILE:
-                            self.close()
-                        raise
+                    result = yield from self._recv(api)
                     return result
-        except asyncio.TimeoutError:
+        except (asyncio.TimeoutError, TTransportException):
             self.close()
             raise
 
