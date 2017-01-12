@@ -11,6 +11,7 @@ from aiothrift.transport import TTransport
 from .protocol import TBinaryProtocol
 from .util import args2kwargs
 from .errors import ConnectionClosedError
+from .log import logger
 
 
 @asyncio.coroutine
@@ -71,7 +72,8 @@ class ThriftConnection:
             self._oprot.write_message_end()
             try:
                 yield from self._oprot.trans.drain()
-            except ConnectionResetError:
+            except ConnectionError as e:
+                logger.debug('connection error {}'.format(str(e)))
                 raise ConnectionClosedError('the server has closed this connection')
 
             # writer.write
