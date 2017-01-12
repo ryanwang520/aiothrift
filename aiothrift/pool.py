@@ -52,6 +52,7 @@ class ThriftPool:
         self._service = service
         self._timeout = timeout
         self.closed = False
+        self._release_tasks = set()
 
     @property
     def size(self):
@@ -89,6 +90,11 @@ class ThriftPool:
         logger.debug("Closed %d connections", conn_num)
 
     @asyncio.coroutine
+    def wait_closed(self):
+        for task in self._release_tasks:
+            yield from asyncio.shield(task, loop=self._loop)
+
+    @asyncio.coroutine
     def acquire(self):
         """Acquires a connection from free pool.
 
@@ -124,7 +130,13 @@ class ThriftPool:
             assert self.freesize < self.maxsize, 'max connection size should not exceed'
             self._pool.append(conn)
         if not self._loop.is_closed():
-            async_task(self._notify_conn_returned(), loop=self._loop)
+            tasks = set()
+            for task in self._release_tasks:
+                if not task.done():
+                    tasks.add(task)
+            self._release_tasks = tasks
+            future = async_task(self._notify_conn_returned(), loop=self._loop)
+            self._release_tasks.add(future)
 
     @asyncio.coroutine
     def fill_free(self, *, override_min):
