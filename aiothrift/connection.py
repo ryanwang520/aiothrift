@@ -54,39 +54,43 @@ class ThriftConnection:
         if self.closed:
             raise ConnectionClosedError('Connection closed')
 
-        with async_timeout.timeout(self.timeout):
-            _kw = args2kwargs(getattr(self.service, api + "_args").thrift_spec,
-                              *args)
-            kwargs.update(_kw)
-            result_cls = getattr(self.service, api + "_result")
+        try:
+            with async_timeout.timeout(self.timeout):
+                _kw = args2kwargs(getattr(self.service, api + "_args").thrift_spec,
+                                  *args)
+                kwargs.update(_kw)
+                result_cls = getattr(self.service, api + "_result")
 
-            self._seqid += 1
-            if self._seqid == sys.maxsize:
-                self._seqid = 0
+                self._seqid += 1
+                if self._seqid == sys.maxsize:
+                    self._seqid = 0
 
-            self._oprot.write_message_begin(api, TMessageType.CALL, self._seqid)
-            args = getattr(self.service, api + '_args')()
-            for k, v in kwargs.items():
-                setattr(args, k, v)
-            args.write(self._oprot)
-            self._oprot.write_message_end()
-            try:
-                yield from self._oprot.trans.drain()
-            except ConnectionError as e:
-                logger.debug('connection error {}'.format(str(e)))
-                raise ConnectionClosedError('the server has closed this connection')
-
-            # writer.write
-            # wait result only if non-oneway
-            if not getattr(result_cls, "oneway"):
+                self._oprot.write_message_begin(api, TMessageType.CALL, self._seqid)
+                args = getattr(self.service, api + '_args')()
+                for k, v in kwargs.items():
+                    setattr(args, k, v)
+                args.write(self._oprot)
+                self._oprot.write_message_end()
                 try:
-                    result = yield from self._recv(api)
-                except TTransportException as e:
-                    # handle EOF
-                    if e.type == TTransportException.END_OF_FILE:
-                        self.close()
-                    raise
-                return result
+                    yield from self._oprot.trans.drain()
+                except ConnectionError as e:
+                    logger.debug('connection error {}'.format(str(e)))
+                    raise ConnectionClosedError('the server has closed this connection')
+
+                # writer.write
+                # wait result only if non-oneway
+                if not getattr(result_cls, "oneway"):
+                    try:
+                        result = yield from self._recv(api)
+                    except TTransportException as e:
+                        # handle EOF
+                        if e.type == TTransportException.END_OF_FILE:
+                            self.close()
+                        raise
+                    return result
+        except asyncio.TimeoutError:
+            self.close()
+            raise
 
     @asyncio.coroutine
     def _recv(self, api):
