@@ -21,7 +21,6 @@ def create_pool(service, address, *, minsize=1, maxsize=10, loop=None, timeout=N
         yield from pool.fill_free(override_min=False)
     except Exception:
         pool.close()
-        yield from pool.wait_closed()
         raise
 
     return pool
@@ -50,10 +49,9 @@ class ThriftPool:
         self._used = set()
         self._acquiring = 0
         self._cond = asyncio.Condition(loop=loop)
-        self._close_state = asyncio.Event(loop=loop)
-        self._close_waiter = async_task(self._do_close(), loop=loop)
         self._service = service
         self._timeout = timeout
+        self.closed = False
 
     @property
     def size(self):
@@ -76,36 +74,19 @@ class ThriftPool:
             conn = self._pool.popleft()
             conn.close()
 
-    @asyncio.coroutine
-    def _do_close(self):
-        yield from self._close_state.wait()
-        with (yield from self._cond):
-            assert not self._acquiring
-            conn_num = 0
-            while self._pool:
-                conn = self._pool.popleft()
-                conn.close()
-                conn_num += 1
-            for conn in self._used:
-                conn.close()
-                conn_num += 1
-            logger.debug("Closed %d connections", conn_num)
-
     def close(self):
         """Close all free and in-progress connections and mark pool as closed.
         """
-        if not self._close_state.is_set():
-            self._close_state.set()
-
-    @property
-    def closed(self):
-        """True if pool is closed."""
-        return self._close_state.is_set()
-
-    @asyncio.coroutine
-    def wait_closed(self):
-        """Wait until pool gets closed."""
-        yield from asyncio.shield(self._close_waiter, loop=self._loop)
+        self.closed = True
+        conn_num = 0
+        while self._pool:
+            conn = self._pool.popleft()
+            conn.close()
+            conn_num += 1
+        for conn in self._used:
+            conn.close()
+            conn_num += 1
+        logger.debug("Closed %d connections", conn_num)
 
     @asyncio.coroutine
     def acquire(self):
@@ -199,11 +180,12 @@ class ThriftPool:
             return _ConnectionContextManager(self, conn)
 
         def get(self):
-            '''Return async context manager for working with connection.
+            """
+            Return async context manager for working with connection.
 
             async with pool.get() as conn:
                 await conn.get(key)
-            '''
+            """
             return _AsyncConnectionContextManager(self)
 
 

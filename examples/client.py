@@ -38,6 +38,4 @@ for i in range(10):
 
 loop.run_until_complete(asyncio.gather(*tasks))
 pool.close()
-loop.run_until_complete(pool.wait_closed())
-
 loop.close()
