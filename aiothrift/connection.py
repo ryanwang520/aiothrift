@@ -1,13 +1,12 @@
-import sys
 import asyncio
-import async_timeout
-
 import functools
+import sys
 
+import async_timeout
 from thriftpy.thrift import TMessageType, TApplicationException
 from thriftpy.transport import TTransportException
 
-from aiothrift.transport import TTransport
+from .transport import TTransport
 from .protocol import TBinaryProtocol
 from .util import args2kwargs
 from .errors import ConnectionClosedError
@@ -20,9 +19,6 @@ def create_connection(service, address, *, protocol_cls=TBinaryProtocol,
     host, port = address
     reader, writer = yield from asyncio.open_connection(
         host, port, loop=loop)
-    sock = writer.transport.get_extra_info('socket')
-    address = sock.getpeername()
-    address = tuple(address[:2])
     itransport = TTransport(reader)
     iprotocol = protocol_cls(itransport)
     oprotocol = protocol_cls(writer)
