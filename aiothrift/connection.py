@@ -69,7 +69,10 @@ class ThriftConnection:
                 setattr(args, k, v)
             args.write(self._oprot)
             self._oprot.write_message_end()
-            yield from self._oprot.trans.drain()
+            try:
+                yield from self._oprot.trans.drain()
+            except ConnectionResetError:
+                raise ConnectionClosedError('the server has closed this connection')
 
             # writer.write
             # wait result only if non-oneway
