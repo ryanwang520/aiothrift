@@ -102,6 +102,7 @@ Or use ConnectionPool
             print(await conn.ping())
             print(await conn.add(5, 6))
         pool.close()
+        yield from pool.wait_closed()
 
     loop.run_until_complete(go())
     loop.close()

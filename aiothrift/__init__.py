@@ -8,4 +8,4 @@ from .errors import (
 from .processor import TProcessor
 from .server import Server, make_server
 
-__version__ = '0.0.6'
+__version__ = '0.0.7'
