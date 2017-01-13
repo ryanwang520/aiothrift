@@ -3,9 +3,7 @@ import functools
 
 import async_timeout
 from thriftpy.thrift import TMessageType, TApplicationException
-from thriftpy.transport import TTransportException
 
-from .transport import TTransport
 from .protocol import TBinaryProtocol
 from .util import args2kwargs
 from .errors import ConnectionClosedError
@@ -13,8 +11,8 @@ from .log import logger
 
 
 @asyncio.coroutine
-def create_connection(service, address=('127.0.0.1', 6000), *, protocol_cls=TBinaryProtocol,
-                      timeout=None, loop=None):
+def create_connection(service, address=('127.0.0.1', 6000), *,
+                      protocol_cls=TBinaryProtocol, timeout=None, loop=None):
     """Create a thrift connection.
     This function is a coroutine.
 
@@ -31,8 +29,7 @@ def create_connection(service, address=('127.0.0.1', 6000), *, protocol_cls=TBin
     host, port = address
     reader, writer = yield from asyncio.open_connection(
         host, port, loop=loop)
-    itransport = TTransport(reader)
-    iprotocol = protocol_cls(itransport)
+    iprotocol = protocol_cls(reader)
     oprotocol = protocol_cls(writer)
 
     return ThriftConnection(service, iprot=iprotocol, oprot=oprotocol,
@@ -43,6 +40,7 @@ class ThriftConnection:
     """
     Thrift Connection.
     """
+
     def __init__(self, service, *, iprot, oprot, address, loop=None, timeout=None):
         self.service = service
         self._reader = iprot.trans
@@ -80,7 +78,7 @@ class ThriftConnection:
         Execute a rpc call by api name. This is function is a coroutine.
         Raises:
             * asyncio.TimeoutError if this task has exceeded the `timeout`
-            * TTransportException if server has closed this connection.
+            * ConnectionClosedError if server has closed this connection.
             * TApplicationException when thrift response is an exception defined in thrift.
 
         :param api: api name defined in thrift file
@@ -104,18 +102,20 @@ class ThriftConnection:
                     setattr(args, k, v)
                 args.write(self._oprot)
                 self._oprot.write_message_end()
-                try:
-                    yield from self._oprot.trans.drain()
-                except ConnectionError as e:
-                    logger.debug('connection error {}'.format(str(e)))
-                    raise ConnectionClosedError('the server has closed this connection')
-
+                yield from self._oprot.trans.drain()
                 if not getattr(result_cls, "oneway"):
                     result = yield from self._recv(api)
                     return result
-        except (asyncio.TimeoutError, TTransportException):
+        except asyncio.TimeoutError:
             self.close()
             raise
+        except ConnectionError as e:
+            self.close()
+            logger.debug('connection error {}'.format(str(e)))
+            raise ConnectionClosedError('the server has closed this connection') from e
+        except asyncio.IncompleteReadError as e:
+            self.close()
+            raise ConnectionClosedError('Server connection has closed') from e
 
     @asyncio.coroutine
     def _recv(self, api):

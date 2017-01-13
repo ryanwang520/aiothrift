@@ -157,7 +157,7 @@ def write_val(outbuf, ttype, val, spec=None):
 
 @asyncio.coroutine
 def read_message_begin(inbuf, strict=True):
-    data = yield from inbuf.read(4)
+    data = yield from inbuf.readexactly(4)
     sz = unpack_i32(data)
     if sz < 0:
         version = sz & VERSION_MASK
@@ -166,9 +166,9 @@ def read_message_begin(inbuf, strict=True):
                 type=TProtocolException.BAD_VERSION,
                 message='Bad version in read_message_begin: %d' % (sz))
 
-        data = yield from inbuf.read(4)
+        data = yield from inbuf.readexactly(4)
         name_sz = unpack_i32(data)
-        data = yield from inbuf.read(name_sz)
+        data = yield from inbuf.readexactly(name_sz)
         name = data.decode('utf-8')
         type_ = sz & TYPE_MASK
     else:
@@ -176,11 +176,11 @@ def read_message_begin(inbuf, strict=True):
             raise TProtocolException(type=TProtocolException.BAD_VERSION,
                                      message='No protocol version header')
 
-        data = yield from inbuf.read(sz)
+        data = yield from inbuf.readexactly(sz)
         name = data.decode('utf-8')
-        type_ = unpack_i8(inbuf.read(1))
+        type_ = unpack_i8(inbuf.readexactly(1))
 
-    data = yield from inbuf.read(4)
+    data = yield from inbuf.readexactly(4)
     seqid = unpack_i32(data)
 
     return name, type_, seqid
@@ -188,30 +188,30 @@ def read_message_begin(inbuf, strict=True):
 
 @asyncio.coroutine
 def read_field_begin(inbuf):
-    data = yield from inbuf.read(1)
+    data = yield from inbuf.readexactly(1)
     f_type = unpack_i8(data)
     if f_type == TType.STOP:
         return f_type, 0
 
-    data = yield from inbuf.read(2)
+    data = yield from inbuf.readexactly(2)
     return f_type, unpack_i16(data)
 
 
 @asyncio.coroutine
 def read_list_begin(inbuf):
-    data = yield from inbuf.read(1)
+    data = yield from inbuf.readexactly(1)
     e_type = unpack_i8(data)
-    data = yield from inbuf.read(4)
+    data = yield from inbuf.readexactly(4)
     sz = unpack_i32(data)
     return e_type, sz
 
 
 @asyncio.coroutine
 def read_map_begin(inbuf):
-    k = yield from inbuf.read(1)
-    v = yield from inbuf.read(1)
+    k = yield from inbuf.readexactly(1)
+    v = yield from inbuf.readexactly(1)
     k_type, v_type = unpack_i8(k), unpack_i8(v)
-    data = yield from inbuf.read(4)
+    data = yield from inbuf.readexactly(4)
     sz = unpack_i32(data)
     return k_type, v_type, sz
 
@@ -219,33 +219,33 @@ def read_map_begin(inbuf):
 @asyncio.coroutine
 def read_val(inbuf, ttype, spec=None, decode_response=True):
     if ttype == TType.BOOL:
-        data = yield from inbuf.read(1)
+        data = yield from inbuf.readexactly(1)
         return bool(unpack_i8(data))
 
     elif ttype == TType.BYTE:
-        data = yield from inbuf.read(1)
+        data = yield from inbuf.readexactly(1)
         return unpack_i8(data)
 
     elif ttype == TType.I16:
-        data = yield from inbuf.read(2)
+        data = yield from inbuf.readexactly(2)
         return unpack_i16(data)
 
     elif ttype == TType.I32:
-        data = yield from inbuf.read(4)
+        data = yield from inbuf.readexactly(4)
         return unpack_i32(data)
 
     elif ttype == TType.I64:
-        data = yield from inbuf.read(8)
+        data = yield from inbuf.readexactly(8)
         return unpack_i64(data)
 
     elif ttype == TType.DOUBLE:
-        data = yield from inbuf.read(8)
+        data = yield from inbuf.readexactly(8)
         return unpack_double(data)
 
     elif ttype == TType.STRING:
-        data = yield from inbuf.read(4)
+        data = yield from inbuf.readexactly(4)
         sz = unpack_i32(data)
-        byte_payload = yield from inbuf.read(sz)
+        byte_payload = yield from inbuf.readexactly(sz)
 
         # Since we cannot tell if we're getting STRING or BINARY
         # if not asked not to decode, try both
@@ -339,22 +339,22 @@ def read_struct(inbuf, obj, decode_response=True):
 @asyncio.coroutine
 def skip(inbuf, ftype):
     if ftype == TType.BOOL or ftype == TType.BYTE:
-        yield from inbuf.read(1)
+        yield from inbuf.readexactly(1)
 
     elif ftype == TType.I16:
-        yield from inbuf.read(2)
+        yield from inbuf.readexactly(2)
 
     elif ftype == TType.I32:
-        yield from inbuf.read(4)
+        yield from inbuf.readexactly(4)
 
     elif ftype == TType.I64:
-        yield from inbuf.read(8)
+        yield from inbuf.readexactly(8)
 
     elif ftype == TType.DOUBLE:
-        yield from inbuf.read(8)
+        yield from inbuf.readexactly(8)
 
     elif ftype == TType.STRING:
-        yield from inbuf.read(unpack_i32(inbuf.read(4)))
+        yield from inbuf.readexactly(unpack_i32(inbuf.readexactly(4)))
 
     elif ftype == TType.SET or ftype == TType.LIST:
         v_type, sz = yield from read_list_begin(inbuf)

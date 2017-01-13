@@ -7,6 +7,5 @@ from .errors import (
 )
 from .processor import TProcessor
 from .server import Server, make_server
-from .transport import TTransport
 
 __version__ = '0.0.6'
