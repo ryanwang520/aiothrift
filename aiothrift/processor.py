@@ -45,14 +45,14 @@ class TProcessor(object):
         oprot.write_message_begin(api, TMessageType.EXCEPTION, seqid)
         exc.write(oprot)
         oprot.write_message_end()
-        yield from oprot.transport.drain()
+        yield from oprot.trans.drain()
 
     @asyncio.coroutine
     def send_result(self, oprot, api, result, seqid):
         oprot.write_message_begin(api, TMessageType.REPLY, seqid)
         result.write(oprot)
         oprot.write_message_end()
-        yield from oprot.transport.drain()
+        yield from oprot.trans.drain()
 
     def handle_exception(self, e, result):
         for k in sorted(result.thrift_spec):
