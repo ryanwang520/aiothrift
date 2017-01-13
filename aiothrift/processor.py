@@ -1,7 +1,7 @@
 import asyncio
 
 from thriftpy.thrift import TType, TApplicationException, TMessageType
-from thriftpy.transport import TTransportException
+from .errors import ConnectionClosedError
 
 from .log import logger
 
@@ -19,7 +19,7 @@ class TProcessor(object):
         if api not in self._service.thrift_services:
             yield from iprot.skip(TType.STRUCT)
             yield from iprot.read_message_end()
-            return api, seqid, TApplicationException(TApplicationException.UNKNOWN_METHOD), None  # noqa
+            return api, seqid, TApplicationException(TApplicationException.UNKNOWN_METHOD), None
 
         args = getattr(self._service, api + "_args")()
         yield from iprot.read_struct(args)
@@ -45,22 +45,14 @@ class TProcessor(object):
         oprot.write_message_begin(api, TMessageType.EXCEPTION, seqid)
         exc.write(oprot)
         oprot.write_message_end()
-        yield from self.flush(oprot)
-
-    @asyncio.coroutine
-    def flush(self, oprot):
-        try:
-            yield from oprot.trans.drain()
-        except ConnectionError as e:
-            logger.debug('connection error')
-            raise TTransportException(type, str(e))
+        yield from oprot.transport.drain()
 
     @asyncio.coroutine
     def send_result(self, oprot, api, result, seqid):
         oprot.write_message_begin(api, TMessageType.REPLY, seqid)
         result.write(oprot)
         oprot.write_message_end()
-        yield from self.flush(oprot)
+        yield from oprot.transport.drain()
 
     def handle_exception(self, e, result):
         for k in sorted(result.thrift_spec):

@@ -1,12 +1,10 @@
 import asyncio
 
-from thriftpy.transport import TTransportException
 import async_timeout
 
 from .log import logger
 from .processor import TProcessor
 from .protocol import TBinaryProtocol
-from .transport import TTransport
 
 
 class Server:
@@ -17,18 +15,20 @@ class Server:
 
     @asyncio.coroutine
     def __call__(self, reader, writer):
-        itransport = TTransport(reader)
-        iproto = self.protocol_cls(itransport)
+        iproto = self.protocol_cls(reader)
         oproto = self.protocol_cls(writer)
         while not reader.at_eof():
             try:
                 with async_timeout.timeout(self.timeout):
                     yield from self.processor.process(iproto, oproto)
-            except TTransportException:
-                logger.debug('transport exception')
+            except ConnectionError:
+                logger.debug('client has closed the connection')
                 writer.close()
             except asyncio.TimeoutError:
                 logger.debug('timeout when processing the client request')
+                writer.close()
+            except asyncio.IncompleteReadError:
+                logger.debug('client has closed the connection')
                 writer.close()
             except Exception:
                 # app exception

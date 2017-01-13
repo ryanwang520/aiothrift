@@ -70,14 +70,6 @@ protocol
 .. autoclass:: TBinaryProtocol
     :members:
 
-transport
----------
-
-.. module:: aiothrift.transport
-
-.. autoclass:: TTransport
-    :members:
-
 processor
 ---------
 
