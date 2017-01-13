@@ -14,9 +14,9 @@ Installation
 
 The easiest way to install aiothrift is by using the packae on Pypi::
 
-   pip install aiothrift
+    pip install aiothrift
 
- Requirements
+Requirements
 -------------
 
 - Python 3.4 +
@@ -33,7 +33,7 @@ some suggestions for library improvement.
 License
 -------
 
-The aioredis is offered under `MIT license`_.
+The aiothrift is offered under `MIT license`_.
 
 ----
 
@@ -49,7 +49,6 @@ Contents
    tutorial
    license
 
-   :caption: Contents:
 
 API Reference
 -------------
@@ -61,3 +60,6 @@ method, this part of the documentation is for you.
    :maxdepth: 2
 
    api
+
+.. _MIT license: https://github.com/moonshadow/aiothrift/blob/master/LICENSE
+

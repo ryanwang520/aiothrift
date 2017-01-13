@@ -3,8 +3,12 @@ aiothrift
 
 Asyncio implementation for thrift protocol, which is heavily based on thriftpy_.
 
+.. image:: http://img.shields.io/travis/moonshadow/aiothrift/master.svg?style=flat
+   :target: https://travis-ci.org/moonshadow/aiothrift
 
 This project is still in early develop state and thus is not recommended for production usage.
+
+Documentation: https://aiothrift.readthedocs.org/
 
 Installation
 ------------
