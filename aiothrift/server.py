@@ -44,6 +44,17 @@ def make_server(service, handler,
                 protocol_cls=TBinaryProtocol,
                 timeout=None
                 ):
+    """ create a thrift server.
+    This function is a coroutine.
+
+    :param service: thrift Service
+    :param handler: a dispatcher object which is a namespace for all thrift api functions.
+    :param address:  (host, port) tuple
+    :param loop: event loop instance
+    :param protocol_cls: thrift protocol class
+    :param timeout: server side timeout
+    :return: a Server object which can be used to stop the service
+    """
     host, port = address
     processor = TProcessor(service, handler)
     if loop is None:

@@ -15,6 +15,19 @@ from .log import logger
 @asyncio.coroutine
 def create_connection(service, address=('127.0.0.1', 6000), *, protocol_cls=TBinaryProtocol,
                       timeout=None, loop=None):
+    """Create a thrift connection.
+    This function is a coroutine.
+
+    Open a connection to the thrift server by address argument.
+
+    :param service: a thrift service object
+    :param address: a (host, port) tuple
+    :param protocol_cls: protocol type, default is `TBinaryProtocol`
+    :param timeout: if specified, would raise `asyncio.TimeoutError` if one rpc call is longer
+    than `timeout`
+    :param loop: event loop instance, if not specified, default loop is used.
+    :return: newly created connection instance.
+    """
     host, port = address
     reader, writer = yield from asyncio.open_connection(
         host, port, loop=loop)
@@ -27,6 +40,9 @@ def create_connection(service, address=('127.0.0.1', 6000), *, protocol_cls=TBin
 
 
 class ThriftConnection:
+    """
+    Thrift Connection.
+    """
     def __init__(self, service, *, iprot, oprot, address, loop=None, timeout=None):
         self.service = service
         self._reader = iprot.trans
@@ -41,6 +57,12 @@ class ThriftConnection:
         self._init_rpc_apis()
 
     def _init_rpc_apis(self):
+        """
+        find out all apis defined in thrift service, and create corresponding
+        method on the connection object, ignore it if some api name is conflicted with
+        an existed attribute of the connection object, which you should call by using
+        the `execute` method.
+        """
         for api in self.service.thrift_services:
             if not hasattr(self, api):
                 setattr(self, api, functools.partial(self.execute, api))
@@ -49,8 +71,23 @@ class ThriftConnection:
                     'api name {0} is conflicted with connection attribute '
                     '{0}, while you can still call this api by `send_call("{0}")`'.format(api))
 
+    def __repr__(self):
+        return '<ThriftConnection {} to>'.format(self.address)
+
     @asyncio.coroutine
     def execute(self, api, *args, **kwargs):
+        """
+        Execute a rpc call by api name. This is function is a coroutine.
+        Raises:
+            * asyncio.TimeoutError if this task has exceeded the `timeout`
+            * TTransportException if server has closed this connection.
+            * TApplicationException when thrift response is an exception defined in thrift.
+
+        :param api: api name defined in thrift file
+        :param args: positional arguments passed to api function
+        :param kwargs:  keyword arguments passed to api function
+        :return: result of this rpc call
+        """
         if self.closed:
             raise ConnectionClosedError('Connection closed')
 
@@ -82,6 +119,9 @@ class ThriftConnection:
 
     @asyncio.coroutine
     def _recv(self, api):
+        """
+        A coroutine which receive response from the thrift server
+        """
         fname, mtype, rseqid = yield from self._iprot.read_message_begin()
         if rseqid != self._seqid:
             # transport should be closed if bad seq happened

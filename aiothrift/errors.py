@@ -1,5 +1,5 @@
 class ThriftError(Exception):
-    pass
+    """ Base Exception defined by `aiothrift` """
 
 
 class ConnectionClosedError(ThriftError):
@@ -7,4 +7,4 @@ class ConnectionClosedError(ThriftError):
 
 
 class PoolClosedError(ThriftError):
-    pass
+    """Raised when operating on a closed thrift connection pool"""

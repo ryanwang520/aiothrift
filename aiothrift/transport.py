@@ -9,6 +9,11 @@ class TTransport:
 
     @asyncio.coroutine
     def read(self, sz):
+        """
+        read all btyes by specified by the number of `sz`.
+        This function is a coroutine.
+        Raise TTransportException if the EOF was received and the internal buffer is empty
+        """
         buff = b''
         have = 0
         while have < sz:
