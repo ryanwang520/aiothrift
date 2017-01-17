@@ -1,10 +1,5 @@
-.. aiothrift documentation master file, created by
-   sphinx-quickstart on Fri Jan 13 12:14:05 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-aiothrift
-=========
+Welcome to aiothrift
+====================
 
 asyncio (:pep:`3156`) Thrift client and server library.
 
@@ -30,25 +25,18 @@ Contribute
 Feel free to file an issue or make pull request if you find any bugs or have
 some suggestions for library improvement.
 
-License
--------
-
-The aiothrift is offered under `MIT license`_.
-
 ----
 
-Contents
-========
+User's Guide
+============
 
 
 .. toctree::
    :maxdepth: 2
 
-   foreword
+   forward
    quickstart
    tutorial
-   license
-
 
 API Reference
 -------------
@@ -63,3 +51,13 @@ method, this part of the documentation is for you.
 
 .. _MIT license: https://github.com/moonshadow/aiothrift/blob/master/LICENSE
 
+
+Additional Notes
+----------------
+
+Information and changelog are here for the interested.
+
+.. toctree::
+    :maxdepth: 2
+
+    license

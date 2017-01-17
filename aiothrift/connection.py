@@ -2,11 +2,11 @@ import asyncio
 import functools
 
 import async_timeout
-from thriftpy.thrift import TMessageType, TApplicationException
+from thriftpy.thrift import TMessageType
 
 from .protocol import TBinaryProtocol
 from .util import args2kwargs
-from .errors import ConnectionClosedError
+from .errors import ConnectionClosedError, ThriftAppError
 from .log import logger
 
 
@@ -22,7 +22,7 @@ def create_connection(service, address=('127.0.0.1', 6000), *,
     :param address: a (host, port) tuple
     :param protocol_cls: protocol type, default is `TBinaryProtocol`
     :param timeout: if specified, would raise `asyncio.TimeoutError` if one rpc call is longer
-    than `timeout`
+        than `timeout`
     :param loop: event loop instance, if not specified, default loop is used.
     :return: newly created connection instance.
     """
@@ -76,15 +76,14 @@ class ThriftConnection:
     def execute(self, api, *args, **kwargs):
         """
         Execute a rpc call by api name. This is function is a coroutine.
-        Raises:
-            * asyncio.TimeoutError if this task has exceeded the `timeout`
-            * ConnectionClosedError if server has closed this connection.
-            * TApplicationException when thrift response is an exception defined in thrift.
 
         :param api: api name defined in thrift file
         :param args: positional arguments passed to api function
         :param kwargs:  keyword arguments passed to api function
         :return: result of this rpc call
+        :raises: :class:`~asyncio.TimeoutError` if this task has exceeded the `timeout`
+        :raises: :class:`ThriftAppError` if thrift response is an exception defined in thrift.
+        :raises: :class:`ConnectionClosedError`: if server has closed this connection.
         """
         if self.closed:
             raise ConnectionClosedError('Connection closed')
@@ -126,11 +125,11 @@ class ThriftConnection:
         if rseqid != self._seqid:
             # transport should be closed if bad seq happened
             self.close()
-            raise TApplicationException(TApplicationException.BAD_SEQUENCE_ID,
-                                        fname + ' failed: out of sequence response')
+            raise ThriftAppError(ThriftAppError.BAD_SEQUENCE_ID,
+                                 fname + ' failed: out of sequence response')
 
         if mtype == TMessageType.EXCEPTION:
-            x = TApplicationException()
+            x = ThriftAppError()
             yield from self._iprot.read_struct(x)
             yield from self._iprot.read_message_end()
             raise x
@@ -150,7 +149,7 @@ class ThriftConnection:
             if k != 'success' and v:
                 raise v
         if hasattr(result, 'success'):
-            raise TApplicationException(TApplicationException.MISSING_RESULT)
+            raise ThriftAppError(ThriftAppError.MISSING_RESULT)
 
     def close(self):
         self._writer.close()

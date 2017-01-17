@@ -10,82 +10,64 @@ parts where aiothrift depends on external libraries, we document the most
 important right here and provide links to the canonical documentation.
 
 
-Application Object
-------------------
+ThriftConnection Object
+-----------------------
 
 
 .. autoclass:: ThriftConnection
    :members:
+   :inherited-members:
 
-   .. automethod:: __init__
-
-   .. attribute:: service
-
-   .. attribute:: iprot
-
-   .. attribute:: oprot
-
-   .. attribute:: address
-
-   .. attribute:: loop
-
-   .. attribute:: timeout
-
-Connection Pool
----------------
-
-.. currentmodule:: aiothrift.pool
+ThriftConnection Pool
+---------------------
 
 .. autoclass:: ThriftPool
    :members:
    :inherited-members:
 
-   .. automethod:: __init__
-
-   .. attribute:: service
-
-      The thrift service name
-
-   .. attribute:: address
-
-      (host port) tuple
-
-   .. attribute:: minsize
-
-      minial connection number
-
-   .. attribute:: maxsize
-
-      maximal connection number
-
-   .. attribute:: loop
-
-    .. attribute:: timeout
-
 protocol
 --------
 
-.. module:: aiothrift.protocol
-
 .. autoclass:: TBinaryProtocol
     :members:
+    :inherited-members:
 
 processor
 ---------
 
-.. module:: aiothrift.processor
-
 .. autoclass:: TProcessor
    :members:
+   :inherited-members:
 
 server
 ------
 
-.. currentmodule:: aiothrift.server
-
 .. autoclass:: Server
    :members:
+   :inherited-members:
 
-.. attribute:: make_server
+exceptions
+----------
 
+.. autoclass:: ThriftError
+    :members:
+
+.. autoclass:: ConnectionClosedError
+    :members:
+
+.. autoclass:: PoolClosedError
+    :members:
+
+.. autoclass:: ThriftAppError
+    :members:
+
+
+Useful functions
+----------------
+
+.. autofunction:: make_server
+
+.. autofunction:: create_connection
+
+.. autofunction:: create_pool
 

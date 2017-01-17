@@ -150,13 +150,23 @@ class ThriftPool:
             future = async_task(self._notify_conn_returned(), loop=self._loop)
             self._release_tasks.add(future)
 
+    def _drop_closed(self):
+        for i in range(self.freesize):
+            conn = self._pool[0]
+            if conn.closed:
+                self._pool.popleft()
+            else:
+                self._pool.rotate(1)
+
     @asyncio.coroutine
     def fill_free(self, *, override_min):
         """
         make sure at least `self.minsize` amount of connections in the pool
         if `override_min` is True, fill to the `self.maxsize`.
         """
-        # drop closed connections first
+        # drop closed connections first, in case that the user closed the connection manually
+        self._drop_closed()
+
         while self.size < self.minsize:
             self._acquiring += 1
             try:
@@ -164,6 +174,7 @@ class ThriftPool:
                 self._pool.append(conn)
             finally:
                 self._acquiring -= 1
+                self._drop_closed()
         if self.freesize:
             return
         if override_min:
@@ -205,10 +216,10 @@ class ThriftPool:
 
         def get(self):
             """
-            Return async context manager for working with connection.
+            Return async context manager for working with connection::
 
-            async with pool.get() as conn:
-                await conn.get(key)
+                async with pool.get() as conn:
+                    await conn.get(key)
             """
             return _AsyncConnectionContextManager(self)
 
