@@ -2,7 +2,7 @@ import asyncio
 import sys
 import thriftpy
 
-from aiothrift.server import make_server
+from aiothrift.server import create_server
 
 pingpong_thrift = thriftpy.load('tests/test.thrift', module_name='test_thrift')
 
@@ -29,7 +29,7 @@ class Dispatcher:
 loop = asyncio.get_event_loop()
 
 server = loop.run_until_complete(
-    make_server(pingpong_thrift.Test, Dispatcher(), ('127.0.0.1', 6000), loop=loop, timeout=10))
+    create_server(pingpong_thrift.Test, Dispatcher(), ('127.0.0.1', 6000), loop=loop, timeout=10))
 
 print('server is listening on host {} and port {}'.format('127.0.0.1', 6000))
 sys.stdout.flush()

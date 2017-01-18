@@ -16,7 +16,7 @@ ThriftConnection Object
 
 .. autoclass:: ThriftConnection
    :members:
-   :inherited-members:
+   :private-members:
 
 ThriftConnection Pool
 ---------------------
@@ -27,6 +27,9 @@ ThriftConnection Pool
 
 protocol
 --------
+
+.. autoclass:: TProtocol
+    :members:
 
 .. autoclass:: TBinaryProtocol
     :members:
@@ -65,7 +68,7 @@ exceptions
 Useful functions
 ----------------
 
-.. autofunction:: make_server
+.. autofunction:: create_server
 
 .. autofunction:: create_connection
 

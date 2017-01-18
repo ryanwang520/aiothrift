@@ -20,11 +20,10 @@ def create_connection(service, address=('127.0.0.1', 6000), *,
 
     :param service: a thrift service object
     :param address: a (host, port) tuple
-    :param protocol_cls: protocol type, default is `TBinaryProtocol`
-    :param timeout: if specified, would raise `asyncio.TimeoutError` if one rpc call is longer
-        than `timeout`
-    :param loop: event loop instance, if not specified, default loop is used.
-    :return: newly created connection instance.
+    :param protocol_cls: protocol type, default is :class:`TBinaryProtocol`
+    :param timeout: if specified, would raise `asyncio.TimeoutError` if one rpc call is longer than `timeout`
+    :param loop: :class:`Eventloop <asyncio.AbstractEventLoop>` instance, if not specified, default loop is used.
+    :return: newly created :class:`ThriftConnection` instance.
     """
     host, port = address
     reader, writer = yield from asyncio.open_connection(
@@ -59,7 +58,7 @@ class ThriftConnection:
         find out all apis defined in thrift service, and create corresponding
         method on the connection object, ignore it if some api name is conflicted with
         an existed attribute of the connection object, which you should call by using
-        the `execute` method.
+        the :meth:`execute` method.
         """
         for api in self.service.thrift_services:
             if not hasattr(self, api):
