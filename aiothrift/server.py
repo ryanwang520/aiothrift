@@ -39,13 +39,13 @@ class Server:
 
 @asyncio.coroutine
 def make_server(service, handler,
-                address,
+                address=('127.0.0.1', 6000),
                 loop=None,
                 protocol_cls=TBinaryProtocol,
                 timeout=None
                 ):
     """ create a thrift server.
-    This function is a coroutine.
+    This function is a :ref:`coroutine <coroutine>`.
 
     :param service: thrift Service
     :param handler: a dispatcher object which is a namespace for all thrift api functions.
@@ -53,7 +53,7 @@ def make_server(service, handler,
     :param loop: event loop instance
     :param protocol_cls: thrift protocol class
     :param timeout: server side timeout
-    :return: a Server object which can be used to stop the service
+    :return: a :class:`Server` object which can be used to stop the service
     """
     host, port = address
     processor = TProcessor(service, handler)

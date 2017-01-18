@@ -1,6 +1,6 @@
 .. _lisence:
 
-licence
+LICENSE
 =======
 
 .. include:: ../LICENSE

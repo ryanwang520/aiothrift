@@ -14,7 +14,7 @@ from .log import logger
 def create_connection(service, address=('127.0.0.1', 6000), *,
                       protocol_cls=TBinaryProtocol, timeout=None, loop=None):
     """Create a thrift connection.
-    This function is a coroutine.
+    This function is a :ref:`coroutine <coroutine>`.
 
     Open a connection to the thrift server by address argument.
 
@@ -75,7 +75,7 @@ class ThriftConnection:
     @asyncio.coroutine
     def execute(self, api, *args, **kwargs):
         """
-        Execute a rpc call by api name. This is function is a coroutine.
+        Execute a rpc call by api name. This is function is a :ref:`coroutine <coroutine>`.
 
         :param api: api name defined in thrift file
         :param args: positional arguments passed to api function
@@ -119,7 +119,7 @@ class ThriftConnection:
     @asyncio.coroutine
     def _recv(self, api):
         """
-        A coroutine which receive response from the thrift server
+        A :ref:`coroutine <coroutine>` which receive response from the thrift server
         """
         fname, mtype, rseqid = yield from self._iprot.read_message_begin()
         if rseqid != self._seqid:

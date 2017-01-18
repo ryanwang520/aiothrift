@@ -1,7 +1,6 @@
 import asyncio
 import struct
 
-# VERSION_MASK = 0xffff0000
 from thriftpy.protocol.exc import TProtocolException
 from thriftpy.thrift import TType
 

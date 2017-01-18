@@ -34,9 +34,8 @@ User's Guide
 .. toctree::
    :maxdepth: 2
 
-   forward
    quickstart
-   tutorial
+   examples
 
 API Reference
 -------------

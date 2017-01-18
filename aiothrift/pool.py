@@ -16,7 +16,7 @@ PY_35 = sys.version_info >= (3, 5)
 @asyncio.coroutine
 def create_pool(service, address, *, minsize=1, maxsize=10, loop=None, timeout=None):
     """
-    Create a thrift connection pool. This function is a coroutine.
+    Create a thrift connection pool. This function is a :ref:`coroutine <coroutine>`.
 
     :param service: service object defined by thrift file
     :param address: (host, port) tuple

@@ -22,6 +22,9 @@ class Dispatcher:
         result = yield from _add(a, b)
         return result
 
+    def address(self, name):
+        return 'address ' + name
+
 
 loop = asyncio.get_event_loop()
 
