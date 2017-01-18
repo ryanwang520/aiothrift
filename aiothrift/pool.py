@@ -14,17 +14,17 @@ PY_35 = sys.version_info >= (3, 5)
 
 
 @asyncio.coroutine
-def create_pool(service, address, *, minsize=1, maxsize=10, loop=None, timeout=None):
+def create_pool(service, address=('127.0.0.1', 6000), *, minsize=1, maxsize=10, loop=None, timeout=None):
     """
     Create a thrift connection pool. This function is a :ref:`coroutine <coroutine>`.
 
     :param service: service object defined by thrift file
-    :param address: (host, port) tuple
-    :param minsize: minimal thrift connection
-    :param maxsize: maximal thrift connection
-    :param loop: targeting event loop
-    :param timeout: default timeout for each connection
-    :return: `ThriftPool instance`
+    :param address: (host, port) tuple, default is ('127.0.0.1', 6000)
+    :param minsize: minimal thrift connection, default is 1
+    :param maxsize: maximal thrift connection, default is 10
+    :param loop: targeting :class:`eventloop <asyncio.AbstractEventLoop>`
+    :param timeout: default timeout for each connection, default is None
+    :return: :class:`ThriftPool` instance
     """
 
     pool = ThriftPool(service, address, minsize=minsize,

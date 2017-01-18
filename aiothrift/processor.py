@@ -7,7 +7,7 @@ from .log import logger
 
 
 class TProcessor(object):
-    """Base class for procsessor, which works on two streams."""
+    """Base class for thrift rpc processor, which works on two streams."""
 
     def __init__(self, service, handler):
         self._service = service

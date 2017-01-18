@@ -21,7 +21,7 @@ Now you can fire an asyncio thrift server easily::
 
     import asyncio
     import thriftpy
-    from aiothrift import make_server
+    from aiothrift import create_server
 
     class Dispatcher:
         def ping(self):
@@ -33,7 +33,7 @@ Now you can fire an asyncio thrift server easily::
 
     pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
     loop = asyncio.get_event_loop()
-    server = loop.run_until_complete(make_server(pingpong_thrift.PingPong, Dispatcher(), loop=loop))
+    server = loop.run_until_complete(create_server(pingpong_thrift.PingPong, Dispatcher(), loop=loop))
     loop.run_forever()
 
 let's have a look at what the code above does.
@@ -46,7 +46,7 @@ which corresponds to the `ping` function defined in ``pingpong.thrift``. You may
 actually a :ref:`coroutine <coroutine>` but a normal one. if you define the rpc function as a :ref:`coroutine <coroutine>`,
 it would scheduled by our thrift server and send the result back to client after the :ref:`coroutine <coroutine>` task is completed.
 
-3. We then create the server by using :func:`~aiothrift.make_server` function, and it returns a :ref:`coroutine <coroutine>`
+3. We then create the server by using :func:`~aiothrift.create_server` function, and it returns a :ref:`coroutine <coroutine>`
 instance which can be scheduled by the event loop later.
 
 4. Lastly we call ``loop.run_forever()`` to run the event loop to schedule the server task.
