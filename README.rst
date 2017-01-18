@@ -3,10 +3,9 @@ aiothrift
 
 Asyncio implementation for thrift protocol, which is heavily based on thriftpy_.
 
-.. image:: http://img.shields.io/travis/moonshadow/aiothrift/master.svg?style=flat
+.. image:: https://travis-ci.org/moonshadow/aiothrift.svg?branch=master
    :target: https://travis-ci.org/moonshadow/aiothrift
 
-This project is still in early develop state and thus is not recommended for production usage.
 
 Documentation: https://aiothrift.readthedocs.org/
 
@@ -39,7 +38,7 @@ Server
 
     import asyncio
     import thriftpy
-    from aiothrift.server import make_server
+    from aiothrift.server import create_server
 
     pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
 
@@ -53,7 +52,7 @@ Server
 
     loop = asyncio.get_event_loop()
     server = loop.run_until_complete(
-        make_server(pingpong_thrift.PingPong, Dispatcher(), ('127.0.0.1', 6000), loop=loop))
+        create_server(pingpong_thrift.PingPong, Dispatcher(), loop=loop))
     try:
         loop.run_forever()
     except KeyboardInterrupt:
@@ -75,7 +74,7 @@ Client
     pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
 
     async def go():
-        conn = await aiothrift.create_connection(pingpong_thrift.PingPong, ('127.0.0.1', 6000), loop=loop, timeout=2)
+        conn = await aiothrift.create_connection(pingpong_thrift.PingPong, loop=loop)
         print(await conn.ping())
         print(await conn.add(5, 6))
         conn.close()
@@ -96,13 +95,12 @@ Or use ConnectionPool
     pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
 
     async def go():
-        pool = await aiothrift.create_pool(pingpong_thrift.PingPong,
-            ('127.0.0.1', 6000), loop=loop, timeout=2)
+        pool = await aiothrift.create_pool(pingpong_thrift.PingPong, loop=loop)
         async with pool.get() as conn:
             print(await conn.ping())
             print(await conn.add(5, 6))
         pool.close()
-        yield from pool.wait_closed()
+        await pool.wait_closed()
 
     loop.run_until_complete(go())
     loop.close()

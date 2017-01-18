@@ -7,7 +7,7 @@ from .errors import (
     ThriftAppError
 )
 from .processor import TProcessor
-from .server import Server, make_server
-from .protocol import TBinaryProtocol
+from .server import Server, create_server
+from .protocol import TBinaryProtocol, TProtocol
 
-__version__ = '0.0.8'
+__version__ = '0.1'

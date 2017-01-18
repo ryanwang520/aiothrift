@@ -1,7 +1,7 @@
 import asyncio
 import thriftpy
 
-from aiothrift.server import make_server
+from aiothrift.server import create_server
 
 pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
 
@@ -18,7 +18,7 @@ class Dispatcher:
 loop = asyncio.get_event_loop()
 
 server = loop.run_until_complete(
-    make_server(pingpong_thrift.PingPong, Dispatcher(), ('127.0.0.1', 6000), loop=loop, timeout=10))
+    create_server(pingpong_thrift.PingPong, Dispatcher(), ('127.0.0.1', 6000), loop=loop, timeout=10))
 
 print('server is listening on host {} and port {}'.format('127.0.0.1', 6000))
 
