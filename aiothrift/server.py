@@ -42,7 +42,8 @@ def create_server(service, handler,
                   address=('127.0.0.1', 6000),
                   loop=None,
                   protocol_cls=TBinaryProtocol,
-                  timeout=None
+                  timeout=None,
+                  **kw
                   ):
     """ create a thrift server.
     This function is a :ref:`coroutine <coroutine>`.
@@ -53,6 +54,7 @@ def create_server(service, handler,
     :param loop: :class:`Eventloop <asyncio.AbstractEventLoop>` instance
     :param protocol_cls: thrift protocol class, default is :class:`TBinaryProtocol`
     :param timeout: server side timeout, default is None
+    :param kw: params relaied to asyncio.start_server
     :return: a :class:`Server` object which can be used to stop the service
     """
     host, port = address
@@ -60,5 +62,5 @@ def create_server(service, handler,
     if loop is None:
         loop = asyncio.get_event_loop()
     server = yield from asyncio.start_server(
-        Server(processor, protocol_cls, timeout=timeout), host, port, loop=loop)
+        Server(processor, protocol_cls, timeout=timeout), host, port, loop=loop, **kw)
     return server

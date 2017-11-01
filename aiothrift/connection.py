@@ -12,7 +12,7 @@ from .log import logger
 
 @asyncio.coroutine
 def create_connection(service, address=('127.0.0.1', 6000), *,
-                      protocol_cls=TBinaryProtocol, timeout=None, loop=None):
+                      protocol_cls=TBinaryProtocol, timeout=None, loop=None, **kw):
     """Create a thrift connection.
     This function is a :ref:`coroutine <coroutine>`.
 
@@ -23,11 +23,12 @@ def create_connection(service, address=('127.0.0.1', 6000), *,
     :param protocol_cls: protocol type, default is :class:`TBinaryProtocol`
     :param timeout: if specified, would raise `asyncio.TimeoutError` if one rpc call is longer than `timeout`
     :param loop: :class:`Eventloop <asyncio.AbstractEventLoop>` instance, if not specified, default loop is used.
+    :param kw: params relaied to asyncio.open_connection()
     :return: newly created :class:`ThriftConnection` instance.
     """
     host, port = address
     reader, writer = yield from asyncio.open_connection(
-        host, port, loop=loop)
+        host, port, loop=loop, **kw)
     iprotocol = protocol_cls(reader)
     oprotocol = protocol_cls(writer)
 
