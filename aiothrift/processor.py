@@ -13,46 +13,42 @@ class TProcessor(object):
         self._service = service
         self._handler = handler
 
-    @asyncio.coroutine
-    def process_in(self, iprot):
-        api, type, seqid = yield from iprot.read_message_begin()
+    async def process_in(self, iprot):
+        api, type, seqid = await iprot.read_message_begin()
         if api not in self._service.thrift_services:
-            yield from iprot.skip(TType.STRUCT)
-            yield from iprot.read_message_end()
+            await iprot.skip(TType.STRUCT)
+            await iprot.read_message_end()
             return api, seqid, TApplicationException(TApplicationException.UNKNOWN_METHOD), None
 
         args = getattr(self._service, api + "_args")()
-        yield from iprot.read_struct(args)
-        yield from iprot.read_message_end()
+        await iprot.read_struct(args)
+        await iprot.read_message_end()
         result = getattr(self._service, api + "_result")()
 
         # convert kwargs to args
         api_args = [args.thrift_spec[k][1] for k in sorted(args.thrift_spec)]
 
-        @asyncio.coroutine
-        def call():
+        async def call():
             f = getattr(self._handler, api)
             arguments = (args.__dict__[k] for k in api_args)
             if asyncio.iscoroutinefunction(f):
-                rv = yield from f(*arguments)
+                rv = await f(*arguments)
                 return rv
             return f(*arguments)
 
         return api, seqid, result, call
 
-    @asyncio.coroutine
-    def send_exception(self, oprot, api, exc, seqid):
+    async def send_exception(self, oprot, api, exc, seqid):
         oprot.write_message_begin(api, TMessageType.EXCEPTION, seqid)
         exc.write(oprot)
         oprot.write_message_end()
-        yield from oprot.trans.drain()
+        await oprot.trans.drain()
 
-    @asyncio.coroutine
-    def send_result(self, oprot, api, result, seqid):
+    async def send_result(self, oprot, api, result, seqid):
         oprot.write_message_begin(api, TMessageType.REPLY, seqid)
         result.write(oprot)
         oprot.write_message_end()
-        yield from oprot.trans.drain()
+        await oprot.trans.drain()
 
     def handle_exception(self, e, result):
         for k in sorted(result.thrift_spec):
@@ -66,18 +62,17 @@ class TProcessor(object):
         else:
             raise e
 
-    @asyncio.coroutine
-    def process(self, iprot, oprot):
-        api, seqid, result, call = yield from self.process_in(iprot)
+    async def process(self, iprot, oprot):
+        api, seqid, result, call = await self.process_in(iprot)
 
         if isinstance(result, TApplicationException):
-            yield from self.send_exception(oprot, api, result, seqid)
+            await self.send_exception(oprot, api, result, seqid)
             return
         try:
-            result.success = yield from call()
+            result.success = await call()
         except Exception as e:
             # raise if api don't have throws
             self.handle_exception(e, result)
 
         if not result.oneway:
-            yield from self.send_result(oprot, api, result, seqid)
+            await self.send_result(oprot, api, result, seqid)

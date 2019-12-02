@@ -154,9 +154,8 @@ def write_val(writer, ttype, val, spec=None):
         write_field_stop(writer)
 
 
-@asyncio.coroutine
-def read_message_begin(reader, strict=True):
-    data = yield from reader.readexactly(4)
+async def read_message_begin(reader, strict=True):
+    data = await reader.readexactly(4)
     sz = unpack_i32(data)
     if sz < 0:
         version = sz & VERSION_MASK
@@ -165,9 +164,9 @@ def read_message_begin(reader, strict=True):
                 type=TProtocolException.BAD_VERSION,
                 message='Bad version in read_message_begin: %d' % (sz))
 
-        data = yield from reader.readexactly(4)
+        data = await reader.readexactly(4)
         name_sz = unpack_i32(data)
-        data = yield from reader.readexactly(name_sz)
+        data = await reader.readexactly(name_sz)
         name = data.decode('utf-8')
         type_ = sz & TYPE_MASK
     else:
@@ -175,77 +174,73 @@ def read_message_begin(reader, strict=True):
             raise TProtocolException(type=TProtocolException.BAD_VERSION,
                                      message='No protocol version header')
 
-        data = yield from reader.readexactly(sz)
+        data = await reader.readexactly(sz)
         name = data.decode('utf-8')
-        data = yield from reader.readexactly(1)
+        data = await reader.readexactly(1)
         type_ = unpack_i8(data)
 
-    data = yield from reader.readexactly(4)
+    data = await reader.readexactly(4)
     seqid = unpack_i32(data)
 
     return name, type_, seqid
 
 
-@asyncio.coroutine
-def read_field_begin(reader):
-    data = yield from reader.readexactly(1)
+async def read_field_begin(reader):
+    data = await reader.readexactly(1)
     f_type = unpack_i8(data)
     if f_type == TType.STOP:
         return f_type, 0
 
-    data = yield from reader.readexactly(2)
+    data = await reader.readexactly(2)
     return f_type, unpack_i16(data)
 
 
-@asyncio.coroutine
-def read_list_begin(reader):
-    data = yield from reader.readexactly(1)
+async def read_list_begin(reader):
+    data = await reader.readexactly(1)
     e_type = unpack_i8(data)
-    data = yield from reader.readexactly(4)
+    data = await reader.readexactly(4)
     sz = unpack_i32(data)
     return e_type, sz
 
 
-@asyncio.coroutine
-def read_map_begin(reader):
-    k = yield from reader.readexactly(1)
-    v = yield from reader.readexactly(1)
+async def read_map_begin(reader):
+    k = await reader.readexactly(1)
+    v = await reader.readexactly(1)
     k_type, v_type = unpack_i8(k), unpack_i8(v)
-    data = yield from reader.readexactly(4)
+    data = await reader.readexactly(4)
     sz = unpack_i32(data)
     return k_type, v_type, sz
 
 
-@asyncio.coroutine
-def read_val(reader, ttype, spec=None, decode_response=True):
+async def read_val(reader, ttype, spec=None, decode_response=True):
     if ttype == TType.BOOL:
-        data = yield from reader.readexactly(1)
+        data = await reader.readexactly(1)
         return bool(unpack_i8(data))
 
     elif ttype == TType.BYTE:
-        data = yield from reader.readexactly(1)
+        data = await reader.readexactly(1)
         return unpack_i8(data)
 
     elif ttype == TType.I16:
-        data = yield from reader.readexactly(2)
+        data = await reader.readexactly(2)
         return unpack_i16(data)
 
     elif ttype == TType.I32:
-        data = yield from reader.readexactly(4)
+        data = await reader.readexactly(4)
         return unpack_i32(data)
 
     elif ttype == TType.I64:
-        data = yield from reader.readexactly(8)
+        data = await reader.readexactly(8)
         return unpack_i64(data)
 
     elif ttype == TType.DOUBLE:
-        data = yield from reader.readexactly(8)
+        data = await reader.readexactly(8)
         return unpack_double(data)
 
     elif ttype == TType.STRING:
-        data = yield from reader.readexactly(4)
+        data = await reader.readexactly(4)
         sz = unpack_i32(data)
-        byte_payload = yield from reader.readexactly(sz)
+        byte_payload = await reader.readexactly(sz)
 
         # Since we cannot tell if we're getting STRING or BINARY
         # if not asked not to decode, try both
@@ -263,15 +258,15 @@ def read_val(reader, ttype, spec=None, decode_response=True):
             v_type, v_spec = spec, None
 
         result = []
-        r_type, sz = yield from read_list_begin(reader)
+        r_type, sz = await read_list_begin(reader)
         # the v_type is useless here since we already get it from spec
         if r_type != v_type:
             for _ in range(sz):
-                yield from skip(reader, r_type)
+                await skip(reader, r_type)
             return []
 
         for i in range(sz):
-            data = yield from read_val(reader, v_type, v_spec, decode_response)
+            data = await read_val(reader, v_type, v_spec, decode_response)
             result.append(data)
         return result
 
@@ -289,35 +284,34 @@ def read_val(reader, ttype, spec=None, decode_response=True):
             v_type, v_spec = spec[1]
 
         result = {}
-        sk_type, sv_type, sz = yield from read_map_begin(reader)
+        sk_type, sv_type, sz = await read_map_begin(reader)
         if sk_type != k_type or sv_type != v_type:
             for _ in range(sz):
-                yield from skip(reader, sk_type)
-                yield from skip(reader, sv_type)
+                await skip(reader, sk_type)
+                await skip(reader, sv_type)
             return {}
 
         for i in range(sz):
-            k_val = yield from read_val(reader, k_type, k_spec, decode_response)
-            v_val = yield from read_val(reader, v_type, v_spec, decode_response)
+            k_val = await read_val(reader, k_type, k_spec, decode_response)
+            v_val = await read_val(reader, v_type, v_spec, decode_response)
             result[k_val] = v_val
 
         return result
 
     elif ttype == TType.STRUCT:
         obj = spec()
-        yield from read_struct(reader, obj, decode_response)
+        await read_struct(reader, obj, decode_response)
         return obj
 
 
-@asyncio.coroutine
-def read_struct(reader, obj, decode_response=True):
+async def read_struct(reader, obj, decode_response=True):
     while True:
-        f_type, fid = yield from read_field_begin(reader)
+        f_type, fid = await read_field_begin(reader)
         if f_type == TType.STOP:
             break
 
         if fid not in obj.thrift_spec:
-            yield from skip(reader, f_type)
+            await skip(reader, f_type)
             continue
 
         if len(obj.thrift_spec[fid]) == 3:
@@ -329,50 +323,49 @@ def read_struct(reader, obj, decode_response=True):
         # it really should equal here. but since we already wasted
         # space storing the duplicate info, let's check it.
         if f_type != sf_type:
-            yield from skip(reader, f_type)
+            await skip(reader, f_type)
             continue
 
-        data = yield from read_val(reader, f_type, f_container_spec, decode_response)
+        data = await read_val(reader, f_type, f_container_spec, decode_response)
         setattr(obj, f_name, data)
 
 
-@asyncio.coroutine
-def skip(reader, ftype):
+async def skip(reader, ftype):
     if ftype == TType.BOOL or ftype == TType.BYTE:
-        yield from reader.readexactly(1)
+        await reader.readexactly(1)
 
     elif ftype == TType.I16:
-        yield from reader.readexactly(2)
+        await reader.readexactly(2)
 
     elif ftype == TType.I32:
-        yield from reader.readexactly(4)
+        await reader.readexactly(4)
 
     elif ftype == TType.I64:
-        yield from reader.readexactly(8)
+        await reader.readexactly(8)
 
     elif ftype == TType.DOUBLE:
-        yield from reader.readexactly(8)
+        await reader.readexactly(8)
 
     elif ftype == TType.STRING:
-        yield from reader.readexactly(unpack_i32(reader.readexactly(4)))
+        await reader.readexactly(unpack_i32(reader.readexactly(4)))
 
     elif ftype == TType.SET or ftype == TType.LIST:
-        v_type, sz = yield from read_list_begin(reader)
+        v_type, sz = await read_list_begin(reader)
         for i in range(sz):
-            yield from skip(reader, v_type)
+            await skip(reader, v_type)
 
     elif ftype == TType.MAP:
         k_type, v_type, sz = read_map_begin(reader)
         for i in range(sz):
-            yield from skip(reader, k_type)
-            yield from skip(reader, v_type)
+            await skip(reader, k_type)
+            await skip(reader, v_type)
 
     elif ftype == TType.STRUCT:
         while True:
-            f_type, fid = yield from read_field_begin(reader)
+            f_type, fid = await read_field_begin(reader)
             if f_type == TType.STOP:
                 break
-            yield from skip(reader, f_type)
+            await skip(reader, f_type)
 
 
 class TProtocol:
@@ -391,12 +384,10 @@ class TProtocol:
     def skip(self, ttype):
         pass
 
-    @asyncio.coroutine
-    def read_message_begin(self):
+    async def read_message_begin(self):
         pass
 
-    @asyncio.coroutine
-    def read_message_end(self):
+    async def read_message_end(self):
         pass
 
     def write_message_begin(self, name, ttype, seqid):
@@ -405,8 +396,7 @@ class TProtocol:
     def write_message_end(self):
         pass
 
-    @asyncio.coroutine
-    def read_struct(self, obj):
+    async def read_struct(self, obj):
         pass
 
     def write_struct(self, obj):
@@ -419,9 +409,8 @@ class TBinaryProtocol(TProtocol):
     def skip(self, ttype):
         skip(self.trans, ttype)
 
-    @asyncio.coroutine
-    def read_message_begin(self):
-        api, ttype, seqid = yield from read_message_begin(
+    async def read_message_begin(self):
+        api, ttype, seqid = await read_message_begin(
             self.trans, strict=self.strict_read)
         return api, ttype, seqid
 
@@ -429,9 +418,8 @@ class TBinaryProtocol(TProtocol):
         write_message_begin(self.trans, name, ttype, seqid,
                             strict=self.strict_write)
 
-    @asyncio.coroutine
-    def read_struct(self, obj):
-        data = yield from read_struct(self.trans, obj, self.decode_response)
+    async def read_struct(self, obj):
+        data = await read_struct(self.trans, obj, self.decode_response)
         return data
 
     def write_struct(self, obj):

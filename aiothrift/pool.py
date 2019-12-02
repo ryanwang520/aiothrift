@@ -2,6 +2,7 @@
 The connection pool implementation is heavily borrowed from `aioredis`
 """
 import asyncio
+import contextvars as cv
 import collections
 import sys
 
@@ -10,11 +11,11 @@ from .log import logger
 from .util import async_task
 from .errors import PoolClosedError
 
-PY_35 = sys.version_info >= (3, 5)
+
+acquired_connection = cv.ContextVar('acquired_connection')
 
 
-@asyncio.coroutine
-def create_pool(service, address=('127.0.0.1', 6000), *, minsize=1, maxsize=10, loop=None, timeout=None):
+async def create_pool(service, address=('127.0.0.1', 6000), *, minsize=1, maxsize=10, timeout=None):
     """
     Create a thrift connection pool. This function is a :ref:`coroutine <coroutine>`.
 
@@ -22,15 +23,14 @@ def create_pool(service, address=('127.0.0.1', 6000), *, minsize=1, maxsize=10, 
     :param address: (host, port) tuple, default is ('127.0.0.1', 6000)
     :param minsize: minimal thrift connection, default is 1
     :param maxsize: maximal thrift connection, default is 10
-    :param loop: targeting :class:`eventloop <asyncio.AbstractEventLoop>`
     :param timeout: default timeout for each connection, default is None
     :return: :class:`ThriftPool` instance
     """
 
     pool = ThriftPool(service, address, minsize=minsize,
-                      maxsize=maxsize, loop=loop, timeout=timeout)
+                      maxsize=maxsize, timeout=timeout)
     try:
-        yield from pool.fill_free(override_min=False)
+        await pool.fill_free(override_min=False)
     except Exception:
         pool.close()
         raise
@@ -43,7 +43,7 @@ class ThriftPool:
     """
 
     def __init__(self, service, address,
-                 *, minsize, maxsize, loop=None, timeout=None):
+                 *, minsize, maxsize, timeout=None):
         assert isinstance(minsize, int) and minsize >= 0, (
             "minsize must be int >= 0", minsize, type(minsize))
         assert maxsize is not None, "Arbitrary pool size is disallowed."
@@ -51,16 +51,13 @@ class ThriftPool:
             "maxsize must be int > 0", maxsize, type(maxsize))
         assert minsize <= maxsize, (
             "Invalid pool min/max sizes", minsize, maxsize)
-        if loop is None:
-            loop = asyncio.get_event_loop()
         self._address = address
         self.minsize = minsize
         self.maxsize = maxsize
-        self._loop = loop
         self._pool = collections.deque(maxlen=maxsize)
         self._used = set()
         self._acquiring = 0
-        self._cond = asyncio.Condition(loop=loop)
+        self._cond = asyncio.Condition()
         self._service = service
         self._timeout = timeout
         self.closed = False
@@ -76,8 +73,7 @@ class ThriftPool:
         """Current number of free connections."""
         return len(self._pool)
 
-    @asyncio.coroutine
-    def clear(self):
+    async def clear(self):
         """Clear pool connections.
 
         Close and remove all free connections.
@@ -101,24 +97,22 @@ class ThriftPool:
             conn_num += 1
         logger.debug("Closed %d connections", conn_num)
 
-    @asyncio.coroutine
-    def wait_closed(self):
+    async def wait_closed(self):
         for task in self._release_tasks:
-            yield from asyncio.shield(task, loop=self._loop)
+            await asyncio.shield(task)
 
-    @asyncio.coroutine
-    def acquire(self):
+    async def acquire(self):
         """Acquires a connection from free pool.
 
         Creates new connection if needed.
         """
         if self.closed:
             raise PoolClosedError('Pool is closed')
-        with (yield from self._cond):
+        async with self._cond:
             if self.closed:
                 raise PoolClosedError('Pool is closed')
             while True:
-                yield from self.fill_free(override_min=True)
+                await self.fill_free(override_min=True)
                 # new connection has been added to the pool
                 if self.freesize:
                     conn = self._pool.popleft()
@@ -129,7 +123,7 @@ class ThriftPool:
                     return conn
                 else:
                     # wait when no available connection
-                    yield from self._cond.wait()
+                    await self._cond.wait()
 
     def release(self, conn):
         """Returns used connection back into pool.
@@ -141,7 +135,9 @@ class ThriftPool:
         if not conn.closed:
             assert self.freesize < self.maxsize, 'max connection size should not exceed'
             self._pool.append(conn)
-        if not self._loop.is_closed():
+
+        loop = asyncio.get_running_loop()
+        if not loop.is_closed():
             tasks = set()
             for task in self._release_tasks:
                 if not task.done():
@@ -158,8 +154,7 @@ class ThriftPool:
             else:
                 self._pool.rotate(1)
 
-    @asyncio.coroutine
-    def fill_free(self, *, override_min):
+    async def fill_free(self, *, override_min):
         """
         make sure at least `self.minsize` amount of connections in the pool
         if `override_min` is True, fill to the `self.maxsize`.
@@ -170,7 +165,7 @@ class ThriftPool:
         while self.size < self.minsize:
             self._acquiring += 1
             try:
-                conn = yield from self._create_new_connection()
+                conn = await self._create_new_connection()
                 self._pool.append(conn)
             finally:
                 self._acquiring -= 1
@@ -182,84 +177,27 @@ class ThriftPool:
             while not self._pool and self.size < self.maxsize:
                 self._acquiring += 1
                 try:
-                    conn = yield from self._create_new_connection()
+                    conn = await self._create_new_connection()
                     self._pool.append(conn)
                 finally:
                     self._acquiring -= 1
 
     def _create_new_connection(self):
         return create_connection(self._service, self._address,
-                                 loop=self._loop, timeout=self._timeout)
+                                 timeout=self._timeout)
 
-    @asyncio.coroutine
-    def _notify_conn_returned(self):
-        with (yield from self._cond):
+    async def _notify_conn_returned(self):
+        async with self._cond:
             self._cond.notify()
 
-    def __enter__(self):
-        raise RuntimeError(
-            "'yield from' should be used as a context manager expression")
+    async def __aenter__(self):
+        if self.closed:
+            raise PoolClosedError('cannot acquire a connection from a closed pool')
+        if acquired_connection.get(None) is not None:
+            raise RuntimeError('cannot acquire a connection if you already have one inside the same task')
+        _conn = await self.acquire()
+        acquired_connection.set(_conn)
+        return _conn
 
-    def __exit__(self, *args):
-        pass  # pragma: nocover
-
-    def __iter__(self):
-        # this method is needed to allow `yield`ing from pool
-        conn = yield from self.acquire()
-        return _ConnectionContextManager(self, conn)
-
-    if PY_35:
-        def __await__(self):
-            # To make `with await pool` work
-            conn = yield from self.acquire()
-            return _ConnectionContextManager(self, conn)
-
-        def get(self):
-            """
-            Return async context manager for working with connection::
-
-                async with pool.get() as conn:
-                    await conn.get(key)
-            """
-            return _AsyncConnectionContextManager(self)
-
-
-class _ConnectionContextManager:
-    __slots__ = ('_pool', '_conn')
-
-    def __init__(self, pool, conn):
-        self._pool = pool
-        self._conn = conn
-
-    def __enter__(self):
-        return self._conn
-
-    def __exit__(self, exc_type, exc_value, tb):
-        try:
-            self._pool.release(self._conn)
-        finally:
-            self._pool = None
-            self._conn = None
-
-
-if PY_35:
-    class _AsyncConnectionContextManager:
-
-        __slots__ = ('_pool', '_conn')
-
-        def __init__(self, pool):
-            self._pool = pool
-            self._conn = None
-
-        @asyncio.coroutine
-        def __aenter__(self):
-            self._conn = yield from self._pool.acquire()
-            return self._conn
-
-        @asyncio.coroutine
-        def __aexit__(self, exc_type, exc_value, tb):
-            try:
-                self._pool.release(self._conn)
-            finally:
-                self._pool = None
-                self._conn = None
+    async def __aexit__(self, *exc_info):
+        self.release(acquired_connection.get())
