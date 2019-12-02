@@ -1,7 +1,7 @@
 import asyncio
 import subprocess
 import pytest
-import thriftpy
+import thriftpy2 as thriftpy
 
 import aiothrift
 

@@ -2,7 +2,7 @@ import asyncio
 import functools
 
 import async_timeout
-from thriftpy.thrift import TMessageType
+from thriftpy2.thrift import TMessageType
 
 from .protocol import TBinaryProtocol
 from .util import args2kwargs

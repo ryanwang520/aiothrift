@@ -1,8 +1,8 @@
 import asyncio
 import struct
 
-from thriftpy.protocol.exc import TProtocolException
-from thriftpy.thrift import TType
+from thriftpy2.protocol.exc import TProtocolException
+from thriftpy2.thrift import TType
 
 VERSION_MASK = -65536
 VERSION_1 = -2147418112

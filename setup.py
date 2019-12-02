@@ -26,13 +26,12 @@ setup(name='aiothrift',
       description='async thrift server and client',
       long_description='\n\n'.join([read('README.rst'), read('CHANGES.rst')]),
       classifiers=[
-
           'License :: OSI Approved :: MIT License',
           'Programming Language :: Python',
           'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.4',
-          'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
+          'Programming Language :: Python :: 3.8',
           'Environment :: Web Environment',
           'Intended Audience :: Developers',
           'Topic :: Software Development',
@@ -46,4 +45,4 @@ setup(name='aiothrift',
       packages=['aiothrift'],
       install_requires=REQUIREMENTS,
       include_package_data=True,
-      )
+)
