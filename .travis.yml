@@ -3,9 +3,8 @@ python:
   - "3.7"
   - "3.8"
 install:
-  - "pip install -U pip setuptools"
-  - "pip install -U -r ci-requirements.txt"
-  - "pip install -U -e ."
+  - "pip install poetry"
+  - "poetry install"
 
 script:
-  - "python -m pytest tests"
+  - "poetry run pytest tests"
