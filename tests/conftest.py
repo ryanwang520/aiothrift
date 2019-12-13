@@ -6,9 +6,9 @@ import thriftpy2 as thriftpy
 import aiothrift
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def test_thrift():
-    return thriftpy.load('tests/test.thrift', module_name='test_thrift')
+    return thriftpy.load("tests/test.thrift", module_name="test_thrift")
 
 
 @pytest.fixture
@@ -45,13 +45,11 @@ def create_pool(_closable):
     return f
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def server(request):
-    proc = subprocess.Popen(['python3',
-                             'tests/server.py'
-                             ], stdout=subprocess.PIPE)
-    log = b''
-    while b'server is listening' not in log:
+    proc = subprocess.Popen(["python3", "tests/server.py"], stdout=subprocess.PIPE)
+    log = b""
+    while b"server is listening" not in log:
         log = proc.stdout.readline()
 
     def close():
@@ -59,7 +57,7 @@ def server(request):
         proc.wait()
 
     request.addfinalizer(close)
-    proc.address = ('127.0.0.1', 6000)
+    proc.address = ("127.0.0.1", 6000)
     return proc
 
 

@@ -1,3 +1,3 @@
 import logging
 
-logger = logging.getLogger('aiothrift')
+logger = logging.getLogger("aiothrift")

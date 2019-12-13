@@ -2,11 +2,13 @@ import thriftpy
 import aiothrift
 import asyncio
 
-pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
+pingpong_thrift = thriftpy.load("pingpong.thrift", module_name="pingpong_thrift")
 
 
 async def create_pool():
-    return await aiothrift.create_pool(pingpong_thrift.PingPong, ('127.0.0.1', 6000), loop=loop, timeout=1)
+    return await aiothrift.create_pool(
+        pingpong_thrift.PingPong, ("127.0.0.1", 6000), loop=loop, timeout=1
+    )
 
 
 async def run_pool(pool):

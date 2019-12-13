@@ -10,8 +10,14 @@ from .errors import ConnectionClosedError, ThriftAppError
 from .log import logger
 
 
-async def create_connection(service, address=('127.0.0.1', 6000), *,
-                      protocol_cls=TBinaryProtocol, timeout=None, **kw):
+async def create_connection(
+    service,
+    address=("127.0.0.1", 6000),
+    *,
+    protocol_cls=TBinaryProtocol,
+    timeout=None,
+    **kw,
+):
     """Create a thrift connection.
     This function is a :ref:`coroutine <coroutine>`.
 
@@ -20,18 +26,19 @@ async def create_connection(service, address=('127.0.0.1', 6000), *,
     :param service: a thrift service object
     :param address: a (host, port) tuple
     :param protocol_cls: protocol type, default is :class:`TBinaryProtocol`
-    :param timeout: if specified, would raise `asyncio.TimeoutError` if one rpc call is longer than `timeout`
+    :param timeout: if specified, would raise `asyncio.TimeoutError` if one rpc call
+    is longer than `timeout`
     :param kw: params relaied to asyncio.open_connection()
     :return: newly created :class:`ThriftConnection` instance.
     """
     host, port = address
-    reader, writer = await asyncio.open_connection(
-        host, port, **kw)
+    reader, writer = await asyncio.open_connection(host, port, **kw)
     iprotocol = protocol_cls(reader)
     oprotocol = protocol_cls(writer)
 
-    return ThriftConnection(service, iprot=iprotocol, oprot=oprotocol,
-                            address=address, timeout=timeout)
+    return ThriftConnection(
+        service, iprot=iprotocol, oprot=oprotocol, address=address, timeout=timeout
+    )
 
 
 class ThriftConnection:
@@ -63,11 +70,14 @@ class ThriftConnection:
                 setattr(self, api, functools.partial(self.execute, api))
             else:
                 logger.warning(
-                    'api name {0} is conflicted with connection attribute '
-                    '{0}, while you can still call this api by `send_call("{0}")`'.format(api))
+                    "api name {0} is conflicted with connection attribute "
+                    '{0}, while you can still call this api by `send_call("{0}")`'.format(
+                        api
+                    )
+                )
 
     def __repr__(self):
-        return '<ThriftConnection {} to>'.format(self.address)
+        return "<ThriftConnection {} to>".format(self.address)
 
     async def execute(self, api, *args, **kwargs):
         """
@@ -82,17 +92,19 @@ class ThriftConnection:
         :raises: :class:`ConnectionClosedError`: if server has closed this connection.
         """
         if self.closed:
-            raise ConnectionClosedError('Connection closed')
+            raise ConnectionClosedError("Connection closed")
 
         try:
             with async_timeout.timeout(self.timeout):
-                kw = args2kwargs(getattr(self.service, api + "_args").thrift_spec, *args)
+                kw = args2kwargs(
+                    getattr(self.service, api + "_args").thrift_spec, *args
+                )
                 kwargs.update(kw)
                 result_cls = getattr(self.service, api + "_result")
 
                 self._seqid += 1
                 self._oprot.write_message_begin(api, TMessageType.CALL, self._seqid)
-                args = getattr(self.service, api + '_args')()
+                args = getattr(self.service, api + "_args")()
                 for k, v in kwargs.items():
                     setattr(args, k, v)
                 args.write(self._oprot)
@@ -106,11 +118,11 @@ class ThriftConnection:
             raise
         except ConnectionError as e:
             self.close()
-            logger.debug('connection error {}'.format(str(e)))
-            raise ConnectionClosedError('the server has closed this connection') from e
+            logger.debug("connection error {}".format(str(e)))
+            raise ConnectionClosedError("the server has closed this connection") from e
         except asyncio.IncompleteReadError as e:
             self.close()
-            raise ConnectionClosedError('Server connection has closed') from e
+            raise ConnectionClosedError("Server connection has closed") from e
 
     async def _recv(self, api):
         """
@@ -120,15 +132,17 @@ class ThriftConnection:
         if rseqid != self._seqid:
             # transport should be closed if bad seq happened
             self.close()
-            raise ThriftAppError(ThriftAppError.BAD_SEQUENCE_ID,
-                                 fname + ' failed: out of sequence response')
+            raise ThriftAppError(
+                ThriftAppError.BAD_SEQUENCE_ID,
+                fname + " failed: out of sequence response",
+            )
 
         if mtype == TMessageType.EXCEPTION:
             x = ThriftAppError()
             await self._iprot.read_struct(x)
             await self._iprot.read_message_end()
             raise x
-        result = getattr(self.service, api + '_result')()
+        result = getattr(self.service, api + "_result")()
         await self._iprot.read_struct(result)
         await self._iprot.read_message_end()
 
@@ -141,9 +155,9 @@ class ThriftConnection:
 
         # check throws
         for k, v in result.__dict__.items():
-            if k != 'success' and v:
+            if k != "success" and v:
                 raise v
-        if hasattr(result, 'success'):
+        if hasattr(result, "success"):
             raise ThriftAppError(ThriftAppError.MISSING_RESULT)
 
     def close(self):
