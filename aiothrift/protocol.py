@@ -6,7 +6,7 @@ from thriftpy2.thrift import TType
 
 VERSION_MASK = -65536
 VERSION_1 = -2147418112
-TYPE_MASK = 0x000000ff
+TYPE_MASK = 0x000000FF
 
 
 def pack_i8(byte):
@@ -56,9 +56,9 @@ def unpack_double(buffer):
 def write_message_begin(writer, name, ttype, seqid, strict=True):
     if strict:
         writer.write(pack_i32(VERSION_1 | ttype))
-        writer.write(pack_string(name.encode('utf-8')))
+        writer.write(pack_string(name.encode("utf-8")))
     else:
-        writer.write(pack_string(name.encode('utf-8')))
+        writer.write(pack_string(name.encode("utf-8")))
         writer.write(pack_i8(ttype))
 
     writer.write(pack_i32(seqid))
@@ -104,7 +104,7 @@ def write_val(writer, ttype, val, spec=None):
 
     elif ttype == TType.STRING:
         if not isinstance(val, bytes):
-            val = val.encode('utf-8')
+            val = val.encode("utf-8")
         writer.write(pack_string(val))
 
     elif ttype == TType.SET or ttype == TType.LIST:
@@ -162,20 +162,23 @@ async def read_message_begin(reader, strict=True):
         if version != VERSION_1:
             raise TProtocolException(
                 type=TProtocolException.BAD_VERSION,
-                message='Bad version in read_message_begin: %d' % (sz))
+                message="Bad version in read_message_begin: %d" % (sz),
+            )
 
         data = await reader.readexactly(4)
         name_sz = unpack_i32(data)
         data = await reader.readexactly(name_sz)
-        name = data.decode('utf-8')
+        name = data.decode("utf-8")
         type_ = sz & TYPE_MASK
     else:
         if strict:
-            raise TProtocolException(type=TProtocolException.BAD_VERSION,
-                                     message='No protocol version header')
+            raise TProtocolException(
+                type=TProtocolException.BAD_VERSION,
+                message="No protocol version header",
+            )
 
         data = await reader.readexactly(sz)
-        name = data.decode('utf-8')
+        name = data.decode("utf-8")
         data = await reader.readexactly(1)
         type_ = unpack_i8(data)
 
@@ -246,7 +249,7 @@ async def read_val(reader, ttype, spec=None, decode_response=True):
         # if not asked not to decode, try both
         if decode_response:
             try:
-                return byte_payload.decode('utf-8')
+                return byte_payload.decode("utf-8")
             except UnicodeDecodeError:
                 pass
         return byte_payload
@@ -373,9 +376,10 @@ class TProtocol:
     Base class for thrift protocols, subclass should implement some of the protocol methods,
     currently we only have :class:`TBinaryProtocol` implemented for you.
     """
-    def __init__(self, trans,
-                 strict_read=True, strict_write=True,
-                 decode_response=True):
+
+    def __init__(
+        self, trans, strict_read=True, strict_write=True, decode_response=True
+    ):
         self.trans = trans
         self.strict_read = strict_read
         self.strict_write = strict_write
@@ -411,12 +415,12 @@ class TBinaryProtocol(TProtocol):
 
     async def read_message_begin(self):
         api, ttype, seqid = await read_message_begin(
-            self.trans, strict=self.strict_read)
+            self.trans, strict=self.strict_read
+        )
         return api, ttype, seqid
 
     def write_message_begin(self, name, ttype, seqid):
-        write_message_begin(self.trans, name, ttype, seqid,
-                            strict=self.strict_write)
+        write_message_begin(self.trans, name, ttype, seqid, strict=self.strict_write)
 
     async def read_struct(self, obj):
         data = await read_struct(self.trans, obj, self.decode_response)

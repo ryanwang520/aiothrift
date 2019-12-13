@@ -9,10 +9,14 @@ else:
     async_task = asyncio.create_task
 
 # create_future is new in version 3.5.2
-if hasattr(BaseEventLoop, 'create_future'):
+if hasattr(BaseEventLoop, "create_future"):
+
     def create_future(loop):
         return loop.create_future()
+
+
 else:
+
     def create_future(loop):
         return asyncio.Future(loop=loop)
 

@@ -21,28 +21,30 @@ class Server:
                 with async_timeout.timeout(self.timeout):
                     await self.processor.process(iproto, oproto)
             except ConnectionError:
-                logger.debug('client has closed the connection')
+                logger.debug("client has closed the connection")
                 writer.close()
             except asyncio.TimeoutError:
-                logger.debug('timeout when processing the client request')
+                logger.debug("timeout when processing the client request")
                 writer.close()
             except asyncio.IncompleteReadError:
-                logger.debug('client has closed the connection')
+                logger.debug("client has closed the connection")
                 writer.close()
             except Exception:
                 # app exception
-                logger.exception('unhandled app exception')
+                logger.exception("unhandled app exception")
                 writer.close()
         writer.close()
 
 
-async def create_server(service, handler,
-                  address=('127.0.0.1', 6000),
-                  loop=None,
-                  protocol_cls=TBinaryProtocol,
-                  timeout=None,
-                  **kw
-                  ):
+async def create_server(
+    service,
+    handler,
+    address=("127.0.0.1", 6000),
+    loop=None,
+    protocol_cls=TBinaryProtocol,
+    timeout=None,
+    **kw,
+):
     """ create a thrift server.
     This function is a :ref:`coroutine <coroutine>`.
 
@@ -60,5 +62,6 @@ async def create_server(service, handler,
     if loop is None:
         loop = asyncio.get_event_loop()
     server = await asyncio.start_server(
-        Server(processor, protocol_cls, timeout=timeout), host, port, loop=loop, **kw)
+        Server(processor, protocol_cls, timeout=timeout), host, port, loop=loop, **kw
+    )
     return server

@@ -12,10 +12,12 @@ from .util import async_task
 from .errors import PoolClosedError
 
 
-acquired_connection = cv.ContextVar('acquired_connection')
+acquired_connection = cv.ContextVar("acquired_connection")
 
 
-async def create_pool(service, address=('127.0.0.1', 6000), *, minsize=1, maxsize=10, timeout=None):
+async def create_pool(
+    service, address=("127.0.0.1", 6000), *, minsize=1, maxsize=10, timeout=None
+):
     """
     Create a thrift connection pool. This function is a :ref:`coroutine <coroutine>`.
 
@@ -27,8 +29,9 @@ async def create_pool(service, address=('127.0.0.1', 6000), *, minsize=1, maxsiz
     :return: :class:`ThriftPool` instance
     """
 
-    pool = ThriftPool(service, address, minsize=minsize,
-                      maxsize=maxsize, timeout=timeout)
+    pool = ThriftPool(
+        service, address, minsize=minsize, maxsize=maxsize, timeout=timeout
+    )
     try:
         await pool.fill_free(override_min=False)
     except Exception:
@@ -42,15 +45,19 @@ class ThriftPool:
     """Thrift connection pool.
     """
 
-    def __init__(self, service, address,
-                 *, minsize, maxsize, timeout=None):
+    def __init__(self, service, address, *, minsize, maxsize, timeout=None):
         assert isinstance(minsize, int) and minsize >= 0, (
-            "minsize must be int >= 0", minsize, type(minsize))
+            "minsize must be int >= 0",
+            minsize,
+            type(minsize),
+        )
         assert maxsize is not None, "Arbitrary pool size is disallowed."
         assert isinstance(maxsize, int) and maxsize > 0, (
-            "maxsize must be int > 0", maxsize, type(maxsize))
-        assert minsize <= maxsize, (
-            "Invalid pool min/max sizes", minsize, maxsize)
+            "maxsize must be int > 0",
+            maxsize,
+            type(maxsize),
+        )
+        assert minsize <= maxsize, ("Invalid pool min/max sizes", minsize, maxsize)
         self._address = address
         self.minsize = minsize
         self.maxsize = maxsize
@@ -107,10 +114,10 @@ class ThriftPool:
         Creates new connection if needed.
         """
         if self.closed:
-            raise PoolClosedError('Pool is closed')
+            raise PoolClosedError("Pool is closed")
         async with self._cond:
             if self.closed:
-                raise PoolClosedError('Pool is closed')
+                raise PoolClosedError("Pool is closed")
             while True:
                 await self.fill_free(override_min=True)
                 # new connection has been added to the pool
@@ -130,10 +137,10 @@ class ThriftPool:
 
         When queue of free connections is full the connection will be dropped.
         """
-        assert conn in self._used, 'Invalid connection, maybe from other pool'
+        assert conn in self._used, "Invalid connection, maybe from other pool"
         self._used.remove(conn)
         if not conn.closed:
-            assert self.freesize < self.maxsize, 'max connection size should not exceed'
+            assert self.freesize < self.maxsize, "max connection size should not exceed"
             self._pool.append(conn)
 
         loop = asyncio.get_running_loop()
@@ -183,8 +190,7 @@ class ThriftPool:
                     self._acquiring -= 1
 
     def _create_new_connection(self):
-        return create_connection(self._service, self._address,
-                                 timeout=self._timeout)
+        return create_connection(self._service, self._address, timeout=self._timeout)
 
     async def _notify_conn_returned(self):
         async with self._cond:
@@ -192,9 +198,11 @@ class ThriftPool:
 
     async def __aenter__(self):
         if self.closed:
-            raise PoolClosedError('cannot acquire a connection from a closed pool')
+            raise PoolClosedError("cannot acquire a connection from a closed pool")
         if acquired_connection.get(None) is not None:
-            raise RuntimeError('cannot acquire a connection if you already have one inside the same task')
+            raise RuntimeError(
+                "cannot acquire a connection if you already have one inside the same task"
+            )
         _conn = await self.acquire()
         acquired_connection.set(_conn)
         return _conn
