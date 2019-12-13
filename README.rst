@@ -1,7 +1,7 @@
 aiothrift
 =========
 
-Asyncio implementation for thrift protocol, which is heavily based on thriftpy_.
+Asyncio implementation for thrift protocol, which is heavily based on thriftpy2_.
 
 .. image:: https://travis-ci.org/ryanwang520/aiothrift.svg?branch=master
    :target: https://travis-ci.org/ryanwang520/aiothrift
@@ -101,12 +101,12 @@ So if you already have a normal thrift server setup, feel free to create an asyn
 Requirements
 ------------
 
-- Python >= 3.4.2
+- Python >= 3.7.0
 - async-timeout_
 - thriftpy_
 
 .. _async-timeout: https://pypi.python.org/pypi/async_timeout
-.. _thriftpy: https://thriftpy.readthedocs.org/en/latest/
+.. _thriftpy2: https://thriftpy2.readthedocs.org/en/latest/
 
 
 LICENSE
