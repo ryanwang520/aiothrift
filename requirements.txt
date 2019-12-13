@@ -1,2 +1,2 @@
-async-timeout>=1.1.0
-thriftpy>=0.3.9
+async-timeout>=3.0.1
+thriftpy2>=0.4.9

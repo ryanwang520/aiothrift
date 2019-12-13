@@ -1,4 +1,4 @@
-from thriftpy.thrift import TType
+from thriftpy2.thrift import TType
 
 
 class ThriftError(Exception):

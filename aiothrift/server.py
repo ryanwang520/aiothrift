@@ -13,14 +13,13 @@ class Server:
         self.protocol_cls = protocol_cls
         self.timeout = timeout
 
-    @asyncio.coroutine
-    def __call__(self, reader, writer):
+    async def __call__(self, reader, writer):
         iproto = self.protocol_cls(reader)
         oproto = self.protocol_cls(writer)
         while not reader.at_eof():
             try:
                 with async_timeout.timeout(self.timeout):
-                    yield from self.processor.process(iproto, oproto)
+                    await self.processor.process(iproto, oproto)
             except ConnectionError:
                 logger.debug('client has closed the connection')
                 writer.close()
@@ -37,8 +36,7 @@ class Server:
         writer.close()
 
 
-@asyncio.coroutine
-def create_server(service, handler,
+async def create_server(service, handler,
                   address=('127.0.0.1', 6000),
                   loop=None,
                   protocol_cls=TBinaryProtocol,
@@ -61,6 +59,6 @@ def create_server(service, handler,
     processor = TProcessor(service, handler)
     if loop is None:
         loop = asyncio.get_event_loop()
-    server = yield from asyncio.start_server(
+    server = await asyncio.start_server(
         Server(processor, protocol_cls, timeout=timeout), host, port, loop=loop, **kw)
     return server

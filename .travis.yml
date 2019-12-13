@@ -1,11 +1,11 @@
 language: python
 python:
-  - "3.4"
-  - "3.5"
-  - "3.6"
+  - "3.7"
+  - "3.8"
 install:
-  - "pip install -r ci-requirements.txt"
+  - "pip install -U pip setuptools"
+  - "pip install -U -r ci-requirements.txt"
+  - "pip install -U -e ."
 
 script:
-  - "python setup.py develop"
-  - "PYTHONPATH=''; py.test tests"
+  - "python -m pytest tests"

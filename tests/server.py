@@ -1,6 +1,6 @@
 import asyncio
 import sys
-import thriftpy
+import thriftpy2 as thriftpy
 
 from aiothrift.server import create_server
 

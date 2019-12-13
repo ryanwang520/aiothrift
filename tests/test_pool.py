@@ -6,6 +6,7 @@ from aiothrift import (
     PoolClosedError,
     ConnectionClosedError,
 )
+from aiothrift.util import async_task
 
 
 def _assert_defaults(pool):
@@ -20,58 +21,49 @@ def test_connect(pool):
     _assert_defaults(pool)
 
 
-def test_global_loop(test_thrift, create_pool, loop, server):
-    asyncio.set_event_loop(loop)
-
-    pool = loop.run_until_complete(create_pool(
-        test_thrift.Test,
-        server.address))
+@pytest.mark.asyncio
+async def test_clear(pool):
     _assert_defaults(pool)
 
-
-@pytest.mark.run_loop
-def test_clear(pool):
-    _assert_defaults(pool)
-
-    yield from pool.clear()
+    await pool.clear()
     assert pool.freesize == 0
 
 
-@pytest.mark.run_loop
+@pytest.mark.asyncio
 @pytest.mark.parametrize('minsize', [None, -100, 0.0, 100])
-def test_minsize(test_thrift, minsize, create_pool, loop, server):
+async def test_minsize(test_thrift, minsize, create_pool, server):
     with pytest.raises(AssertionError):
-        yield from create_pool(test_thrift.Test,
-                               server.address, minsize=minsize, maxsize=10, loop=loop)
+        await create_pool(test_thrift.Test,
+                               server.address, minsize=minsize, maxsize=10)
 
 
-@pytest.mark.run_loop
+@pytest.mark.asyncio
 @pytest.mark.parametrize('maxsize', [None, -100, 0.0, 1])
-def test_maxsize(test_thrift, maxsize, create_pool, loop, server):
+async def test_maxsize(test_thrift, maxsize, create_pool, server):
     with pytest.raises(AssertionError):
-        yield from create_pool(
+        await create_pool(
             test_thrift.Test,
             server.address,
-            minsize=2, maxsize=maxsize, loop=loop)
+            minsize=2, maxsize=maxsize)
 
 
 def test_no_yield_from(pool):
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AttributeError):
         with pool:
             pass  # pragma: no cover
 
 
-@pytest.mark.run_loop
-def test_rpc(test_thrift, create_pool, loop, server):
-    pool = yield from create_pool(
+@pytest.mark.asyncio
+async def test_rpc(test_thrift, create_pool, server):
+    pool = await create_pool(
         test_thrift.Test,
         server.address,
-        minsize=10, loop=loop)
+        minsize=10)
 
-    with (yield from pool) as conn:
-        result = yield from conn.ping()
+    async with pool as conn:
+        result = await conn.ping()
         assert result == 'pong'
-        result = yield from conn.add(100, 200)
+        result = await conn.add(100, 200)
         assert result == 300
         assert pool.size == 10
         assert pool.freesize == 9
@@ -79,93 +71,89 @@ def test_rpc(test_thrift, create_pool, loop, server):
     assert pool.freesize == 10
 
 
-@pytest.mark.run_loop
-def test_create_new(test_thrift, create_pool, loop, server):
-    pool = yield from create_pool(
+@pytest.mark.asyncio
+async def test_create_nested(test_thrift, create_pool, server):
+    pool = await create_pool(
         test_thrift.Test,
         server.address,
-        minsize=1, loop=loop)
+        minsize=1)
     assert pool.size == 1
     assert pool.freesize == 1
 
-    with (yield from pool):
+    async with pool:
         assert pool.size == 1
         assert pool.freesize == 0
 
-        with (yield from pool):
-            assert pool.size == 2
-            assert pool.freesize == 0
+        with pytest.raises(RuntimeError):
+            async with pool:
+                pass
 
-    assert pool.size == 2
-    assert pool.freesize == 2
-
-
-@pytest.mark.run_loop
-def test_create_constraints(test_thrift, create_pool, loop, server):
-    pool = yield from create_pool(
-        test_thrift.Test,
-        server.address,
-        minsize=1, maxsize=1, loop=loop)
     assert pool.size == 1
     assert pool.freesize == 1
 
-    with (yield from pool):
+
+@pytest.mark.asyncio
+async def test_create_constraints(test_thrift, create_pool, server):
+    pool = await create_pool(
+        test_thrift.Test,
+        server.address,
+        minsize=1, maxsize=1)
+    assert pool.size == 1
+    assert pool.freesize == 1
+
+    async with pool:
         assert pool.size == 1
         assert pool.freesize == 0
 
         with pytest.raises(asyncio.TimeoutError):
-            yield from asyncio.wait_for(pool.acquire(),
-                                        timeout=0.2,
-                                        loop=loop)
+            await asyncio.wait_for(pool.acquire(),
+                                        timeout=0.2)
 
 
-@pytest.mark.run_loop
-def test_create_no_minsize(test_thrift, create_pool, loop, server):
-    pool = yield from create_pool(
+@pytest.mark.asyncio
+async def test_create_no_minsize(test_thrift, create_pool, server):
+    pool = await create_pool(
         test_thrift.Test,
         server.address,
-        minsize=0, maxsize=1, loop=loop)
+        minsize=0, maxsize=1)
     assert pool.size == 0
     assert pool.freesize == 0
 
-    with (yield from pool):
+    async with pool:
         assert pool.size == 1
         assert pool.freesize == 0
 
         with pytest.raises(asyncio.TimeoutError):
-            yield from asyncio.wait_for(pool.acquire(),
-                                        timeout=0.2,
-                                        loop=loop)
+            await asyncio.wait_for(pool.acquire(),
+                                        timeout=0.2)
     assert pool.size == 1
     assert pool.freesize == 1
 
 
-@pytest.mark.run_loop
-def test_release_closed(test_thrift, create_pool, loop, server):
-    pool = yield from create_pool(
+@pytest.mark.asyncio
+async def test_release_closed(test_thrift, create_pool, server):
+    pool = await create_pool(
         test_thrift.Test,
         server.address,
-        minsize=1, loop=loop)
+        minsize=1)
     assert pool.size == 1
     assert pool.freesize == 1
 
-    with (yield from pool) as conn:
+    async with pool as conn:
         conn.close()
     assert pool.size == 0
     assert pool.freesize == 0
 
 
-@pytest.mark.run_loop
-def test_release_bad_connection(test_thrift, create_pool, create_connection, loop, server):
-    pool = yield from create_pool(
+@pytest.mark.asyncio
+async def test_release_bad_connection(test_thrift, create_pool, create_connection, server):
+    pool = await create_pool(
         test_thrift.Test,
-        server.address,
-        loop=loop)
-    conn = yield from pool.acquire()
-    other_conn = yield from create_connection(
+        server.address)
+    conn = await pool.acquire()
+    other_conn = await create_connection(
         test_thrift.Test,
-        server.address,
-        loop=loop)
+        server.address)
     with pytest.raises(AssertionError):
         pool.release(other_conn)
 
@@ -173,87 +161,83 @@ def test_release_bad_connection(test_thrift, create_pool, create_connection, loo
     other_conn.close()
 
 
-@pytest.mark.run_loop
-def test_pool_size_growth(test_thrift, create_pool, server, loop):
-    pool = yield from create_pool(
+@pytest.mark.asyncio
+async def test_pool_size_growth(test_thrift, create_pool, server):
+    pool = await create_pool(
         test_thrift.Test,
         server.address,
-        loop=loop,
         minsize=1, maxsize=1)
 
     done = set()
     tasks = []
 
-    @asyncio.coroutine
-    def task1(i):
-        with (yield from pool):
+    async def task1(i):
+        async with pool:
             assert pool.size <= pool.maxsize
             assert pool.freesize == 0
-            yield from asyncio.sleep(0.2, loop=loop)
+            await asyncio.sleep(0.2)
             done.add(i)
 
-    @asyncio.coroutine
-    def task2():
-        with (yield from pool):
+    async def task2():
+        async with pool:
             assert pool.size <= pool.maxsize
             assert pool.freesize >= 0
             assert done == {0, 1}
 
     for _ in range(2):
-        tasks.append(asyncio.async(task1(_), loop=loop))
-    tasks.append(asyncio.async(task2(), loop=loop))
-    yield from asyncio.gather(*tasks, loop=loop)
+        tasks.append(async_task(task1(_)))
+    tasks.append(async_task(task2()))
+    await asyncio.gather(*tasks)
 
 
-@pytest.mark.run_loop
-def test_pool_with_closed_connections(test_thrift, create_pool, server, loop):
-    pool = yield from create_pool(
+@pytest.mark.asyncio
+async def test_pool_with_closed_connections(test_thrift, create_pool, server):
+    pool = await create_pool(
         test_thrift.Test,
         server.address,
-        loop=loop,
         minsize=1, maxsize=2)
     assert 1 == pool.freesize
     conn1 = pool._pool[0]
     conn1.close()
     assert conn1.closed is True
     assert 1 == pool.freesize
-    with (yield from pool) as conn2:
+    async with pool as conn2:
         assert conn2.closed is False
         assert conn1 is not conn2
 
 
-@pytest.mark.run_loop
-def test_pool_close(test_thrift, create_pool, server, loop):
-    pool = yield from create_pool(
+@pytest.mark.asyncio
+async def test_pool_close(test_thrift, create_pool, server):
+    pool = await create_pool(
         test_thrift.Test,
-        server.address, loop=loop)
+        server.address)
 
     assert pool.closed is False
 
-    with (yield from pool) as cli:
-        assert (yield from cli.ping()) == 'pong'
+    async with pool as cli:
+        assert (await cli.ping()) == 'pong'
 
     pool.close()
-    yield from pool.wait_closed()
+    await pool.wait_closed()
     assert pool.closed is True
 
     with pytest.raises(PoolClosedError):
-        with (yield from pool) as cli:
-            assert (yield from cli.ping()) == 'PONG'
+        async with pool as cli:
+            assert (await cli.ping()) == 'PONG'
 
 
-@pytest.mark.run_loop
-def test_pool_close__used(test_thrift, create_pool, server, loop):
-    pool = yield from create_pool(
+@pytest.mark.asyncio
+async def test_pool_close__used(test_thrift, create_pool, server):
+    pool = await create_pool(
         test_thrift.Test,
-        server.address, loop=loop)
+        server.address)
 
     assert pool.closed is False
 
-    with (yield from pool) as cli:
+    async with pool as cli:
         pool.close()
-        yield from pool.wait_closed()
+        await pool.wait_closed()
         assert pool.closed is True
 
         with pytest.raises(ConnectionClosedError):
-            yield from cli.ping()
+            await cli.ping()
