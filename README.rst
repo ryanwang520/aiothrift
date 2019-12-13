@@ -37,10 +37,9 @@ Server
 .. code:: python
 
     import asyncio
-    import thriftpy
-    from aiothrift.server import create_server
+    import aiothrift
 
-    pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
+    pingpong_thrift = aiothrift.load('pingpong.thrift', module_name='pingpong_thrift')
 
     class Dispatcher:
         def ping(self):
@@ -50,60 +49,49 @@ Server
             await asyncio.sleep(1)
             return a + b
 
-    loop = asyncio.get_event_loop()
-    server = loop.run_until_complete(
-        create_server(pingpong_thrift.PingPong, Dispatcher(), loop=loop))
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        pass
-    server.close()
-    loop.run_until_complete(server.wait_closed())
-    loop.close()
+    async def main():
+      server = await aiothrift.create_server(pingpong_thrift.PingPong, Dispatcher()))
+      async with server:
+          await server.serve_forever()
+    asyncio.run(main())
 
 Client
 ^^^^^^
 
 .. code:: python
 
-    import thriftpy
     import asyncio
     import aiothrift
 
-    loop = asyncio.get_event_loop()
-    pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
+    pingpong_thrift = aiothrift.load('pingpong.thrift', module_name='pingpong_thrift')
 
     async def go():
-        conn = await aiothrift.create_connection(pingpong_thrift.PingPong, loop=loop)
+        conn = await aiothrift.create_connection(pingpong_thrift.PingPong)
         print(await conn.ping())
         print(await conn.add(5, 6))
         conn.close()
 
-    loop.run_until_complete(go())
-    loop.close()
+    asyncio.run(go)
 
 Or use ConnectionPool
 ^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
 
-    import thriftpy
     import asyncio
     import aiothrift
 
-    loop = asyncio.get_event_loop()
-    pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
+    pingpong_thrift = aiothrift.load('pingpong.thrift', module_name='pingpong_thrift')
 
     async def go():
-        pool = await aiothrift.create_pool(pingpong_thrift.PingPong, loop=loop)
-        async with pool.get() as conn:
-            print(await conn.ping())
-            print(await conn.add(5, 6))
+        pool = await aiothrift.create_pool(pingpong_thrift.PingPong)
+        async with pool as c:
+          print(await c.ping())
+          print(await c.add(5, 6))
         pool.close()
         await pool.wait_closed()
 
-    loop.run_until_complete(go())
-    loop.close()
+    asyncio.run(go())
 
 
 It's just that simple to begin with ``aiothrift``, and you are not forced to use ``aiothrift`` on both server and client side.
