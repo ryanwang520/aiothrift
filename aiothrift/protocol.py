@@ -1,4 +1,3 @@
-import asyncio
 import struct
 
 from thriftpy2.protocol.exc import TProtocolException

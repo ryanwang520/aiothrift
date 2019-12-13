@@ -4,7 +4,6 @@ The connection pool implementation is heavily borrowed from `aioredis`
 import asyncio
 import contextvars as cv
 import collections
-import sys
 
 from .connection import create_connection
 from .log import logger

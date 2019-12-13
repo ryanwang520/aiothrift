@@ -1,9 +1,6 @@
 import asyncio
 
 from thriftpy2.thrift import TType, TApplicationException, TMessageType
-from .errors import ConnectionClosedError
-
-from .log import logger
 
 
 class TProcessor(object):
