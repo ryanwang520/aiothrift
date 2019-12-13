@@ -40,7 +40,6 @@ async def create_server(
     service,
     handler,
     address=("127.0.0.1", 6000),
-    loop=None,
     protocol_cls=TBinaryProtocol,
     timeout=None,
     **kw,
@@ -51,7 +50,6 @@ async def create_server(
     :param service: thrift Service
     :param handler: a dispatcher object which is a namespace for all thrift api functions.
     :param address:  (host, port) tuple, default is ('127.0.0.1', 6000)
-    :param loop: :class:`Eventloop <asyncio.AbstractEventLoop>` instance
     :param protocol_cls: thrift protocol class, default is :class:`TBinaryProtocol`
     :param timeout: server side timeout, default is None
     :param kw: params relaied to asyncio.start_server
@@ -59,9 +57,7 @@ async def create_server(
     """
     host, port = address
     processor = TProcessor(service, handler)
-    if loop is None:
-        loop = asyncio.get_event_loop()
     server = await asyncio.start_server(
-        Server(processor, protocol_cls, timeout=timeout), host, port, loop=loop, **kw
+        Server(processor, protocol_cls, timeout=timeout), host, port, **kw
     )
     return server

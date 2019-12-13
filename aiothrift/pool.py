@@ -7,7 +7,6 @@ import collections
 
 from .connection import create_connection
 from .log import logger
-from .util import async_task
 from .errors import PoolClosedError
 
 
@@ -149,7 +148,7 @@ class ThriftPool:
                 if not task.done():
                     tasks.add(task)
             self._release_tasks = tasks
-            future = async_task(self._notify_conn_returned())
+            future = asyncio.create_task(self._notify_conn_returned())
             self._release_tasks.add(future)
 
     def _drop_closed(self):
