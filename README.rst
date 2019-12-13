@@ -53,6 +53,7 @@ Server
       server = await aiothrift.create_server(pingpong_thrift.PingPong, Dispatcher()))
       async with server:
           await server.serve_forever()
+
     asyncio.run(main())
 
 Client
@@ -71,7 +72,7 @@ Client
         print(await conn.add(5, 6))
         conn.close()
 
-    asyncio.run(go)
+    asyncio.run(go())
 
 Or use ConnectionPool
 ^^^^^^^^^^^^^^^^^^^^^
