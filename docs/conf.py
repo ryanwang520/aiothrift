@@ -73,7 +73,7 @@ fname = here / "aiothrift" / "__init__.py"
 
 with fname.open() as fp:
     try:
-        release = re.findall(r"__version__ = '([^']+)'$", fp.read(), re.M)[0]
+        release = re.findall(r'__version__ = "([^"]+)"$', fp.read(), re.M)[0]
     except IndexError:
         raise RuntimeError("Unable to determin version.")
 # The full version, including alpha/beta/rc tags.
