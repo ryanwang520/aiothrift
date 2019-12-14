@@ -32,10 +32,10 @@ async def create_pool(
         pool.close()
         raise
 
-    return AwaitablePoolWrapper(pool)
+    return RPCCommandWrapper(pool)
 
 
-class AwaitablePoolWrapper:
+class RPCCommandWrapper:
     def __init__(self, pool: "ThriftPool"):
         self.pool = pool
 
