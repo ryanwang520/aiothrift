@@ -26,9 +26,9 @@ async def create_connection(
     :param service: a thrift service object
     :param address: a (host, port) tuple
     :param protocol_cls: protocol type, default is :class:`TBinaryProtocol`
-    :param timeout: if specified, would raise `asyncio.TimeoutError` if one rpc call
-    is longer than `timeout`
-    :param kw: params relaied to asyncio.open_connection()
+    :param timeout: if specified, would raise `asyncio.TimeoutError`
+        if one rpc call is longer than `timeout`
+    :param kw: params related to asyncio.open_connection()
     :return: newly created :class:`ThriftConnection` instance.
     """
     host, port = address
@@ -71,7 +71,7 @@ class ThriftConnection:
             else:
                 logger.warning(
                     "api name {0} is conflicted with connection attribute "
-                    '{0}, while you can still call this api by `send_call("{0}")`'.format(
+                    '{0}, while you can still call this api by `execute("{0}")`'.format(
                         api
                     )
                 )

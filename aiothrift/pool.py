@@ -2,11 +2,16 @@
 The connection pool implementation is heavily borrowed from `aioredis`
 """
 import asyncio
+import contextvars as cv
+
 import collections
+import functools
 
 from .connection import create_connection
 from .log import logger
 from .errors import PoolClosedError
+
+acquired_connection = cv.ContextVar("acquired_connection")
 
 
 async def create_pool(
@@ -32,29 +37,7 @@ async def create_pool(
         pool.close()
         raise
 
-    return RPCCommandWrapper(pool)
-
-
-class RPCCommandWrapper:
-    def __init__(self, pool: "ThriftPool"):
-        self.pool = pool
-
-    async def wait_closed(self):
-        await self.pool.wait_closed()
-
-    def close(self):
-        return self.pool.close()
-
-    def __getattr__(self, item):
-        async def call(*args, **kwargs):
-            conn = await self.pool.acquire()
-            command = getattr(conn, item)
-            try:
-                return await command(*args, **kwargs)
-            finally:
-                self.pool.release(conn)
-
-        return call
+    return pool
 
 
 class ThriftPool:
@@ -85,6 +68,27 @@ class ThriftPool:
         self._timeout = timeout
         self.closed = False
         self._release_tasks = set()
+        self._init_rpc_apis()
+
+    def _init_rpc_apis(self):
+        for api in self._service.thrift_services:
+            if not hasattr(self, api):
+
+                setattr(self, api, functools.partial(self.execute, api))
+            else:
+                logger.warning(
+                    "api name {0} is conflicted with connection attribute "
+                    '{0}, while you can still call this api by `execute("{0}")`'.format(
+                        api
+                    )
+                )
+
+    async def execute(self, cmd, *args, **kwargs):
+        conn = await self.acquire()
+        try:
+            return await conn.execute(cmd, *args, **kwargs)
+        finally:
+            self.release(conn)
 
     @property
     def size(self):
@@ -211,3 +215,17 @@ class ThriftPool:
     async def _notify_conn_returned(self):
         async with self._cond:
             self._cond.notify()
+
+    async def __aenter__(self):
+        if self.closed:
+            raise PoolClosedError("cannot acquire a connection from a closed pool")
+        if acquired_connection.get(None) is not None:
+            raise RuntimeError(
+                "cannot acquire a connection if you already have one inside the same task"
+            )
+        _conn = await self.acquire()
+        acquired_connection.set(_conn)
+        return _conn
+
+    async def __aexit__(self, *exc_info):
+        self.release(acquired_connection.get())

@@ -207,3 +207,13 @@ async def test_pool_close__used(test_thrift, create_pool, server):
 
         with pytest.raises(ConnectionClosedError):
             await cli.ping()
+
+
+@pytest.mark.asyncio
+async def test_rpc_method_on_pool(test_thrift, create_pool, server):
+    pool = await create_pool(test_thrift.Test, server.address)
+
+    result = await pool.ping()
+    assert result == "pong"
+    result = await pool.add(1, 2)
+    assert result == 3
