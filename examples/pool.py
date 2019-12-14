@@ -11,11 +11,9 @@ async def create_pool():
 
 
 async def main(pool):
-    async with pool as conn:
-        print(await conn.ping())
-        # async with pool as conn:
-        print(await conn.add(5, 6))
-        print(await conn.ping())
+    print(await pool.ping())
+    print(await pool.add(5, 6))
+    print(await pool.ping())
 
 
 if __name__ == "__main__":
@@ -23,5 +21,7 @@ if __name__ == "__main__":
     async def f():
         pool = await create_pool()
         await asyncio.gather(main(pool), main(pool))
+        pool.close()
+        await pool.wait_closed()
 
     asyncio.run(f())

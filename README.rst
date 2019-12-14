@@ -85,12 +85,11 @@ Or use ConnectionPool
     pingpong_thrift = aiothrift.load('pingpong.thrift', module_name='pingpong_thrift')
 
     async def go():
-        pool = await aiothrift.create_pool(pingpong_thrift.PingPong)
-        async with pool as c:
-          print(await c.ping())
-          print(await c.add(5, 6))
-        pool.close()
-        await pool.wait_closed()
+        client = await aiothrift.create_pool(pingpong_thrift.PingPong)
+        print(await client.ping())
+        print(await client.add(5, 6))
+        client.close()
+        await client.wait_closed()
 
     asyncio.run(go())
 

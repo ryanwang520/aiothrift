@@ -3,12 +3,13 @@ The connection pool implementation is heavily borrowed from `aioredis`
 """
 import asyncio
 import contextvars as cv
+
 import collections
+import functools
 
 from .connection import create_connection
 from .log import logger
 from .errors import PoolClosedError
-
 
 acquired_connection = cv.ContextVar("acquired_connection")
 
@@ -67,6 +68,27 @@ class ThriftPool:
         self._timeout = timeout
         self.closed = False
         self._release_tasks = set()
+        self._init_rpc_apis()
+
+    def _init_rpc_apis(self):
+        for api in self._service.thrift_services:
+            if not hasattr(self, api):
+
+                setattr(self, api, functools.partial(self.execute, api))
+            else:
+                logger.warning(
+                    "api name {0} is conflicted with connection attribute "
+                    '{0}, while you can still call this api by `execute("{0}")`'.format(
+                        api
+                    )
+                )
+
+    async def execute(self, cmd, *args, **kwargs):
+        conn = await self.acquire()
+        try:
+            return await conn.execute(cmd, *args, **kwargs)
+        finally:
+            self.release(conn)
 
     @property
     def size(self):
