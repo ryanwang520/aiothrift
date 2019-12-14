@@ -102,7 +102,7 @@ Requirements
 
 - Python >= 3.7.0
 - async-timeout_
-- thriftpy_
+- thriftpy2_
 
 .. _async-timeout: https://pypi.python.org/pypi/async_timeout
 .. _thriftpy2: https://thriftpy2.readthedocs.org/en/latest/
