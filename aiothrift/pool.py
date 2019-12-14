@@ -2,15 +2,11 @@
 The connection pool implementation is heavily borrowed from `aioredis`
 """
 import asyncio
-import contextvars as cv
 import collections
 
 from .connection import create_connection
 from .log import logger
 from .errors import PoolClosedError
-
-
-acquired_connection = cv.ContextVar("acquired_connection")
 
 
 async def create_pool(
@@ -36,7 +32,29 @@ async def create_pool(
         pool.close()
         raise
 
-    return pool
+    return AwaitablePoolWrapper(pool)
+
+
+class AwaitablePoolWrapper:
+    def __init__(self, pool: "ThriftPool"):
+        self.pool = pool
+
+    async def wait_closed(self):
+        await self.pool.wait_closed()
+
+    def close(self):
+        return self.pool.close()
+
+    def __getattr__(self, item):
+        async def call(*args, **kwargs):
+            conn = await self.pool.acquire()
+            command = getattr(conn, item)
+            try:
+                return await command(*args, **kwargs)
+            finally:
+                self.pool.release(conn)
+
+        return call
 
 
 class ThriftPool:
@@ -193,17 +211,3 @@ class ThriftPool:
     async def _notify_conn_returned(self):
         async with self._cond:
             self._cond.notify()
-
-    async def __aenter__(self):
-        if self.closed:
-            raise PoolClosedError("cannot acquire a connection from a closed pool")
-        if acquired_connection.get(None) is not None:
-            raise RuntimeError(
-                "cannot acquire a connection if you already have one inside the same task"
-            )
-        _conn = await self.acquire()
-        acquired_connection.set(_conn)
-        return _conn
-
-    async def __aexit__(self, *exc_info):
-        self.release(acquired_connection.get())

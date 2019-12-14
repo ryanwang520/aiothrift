@@ -20,26 +20,29 @@ create a thrift file named :file:`pingpong.thrift`::
 Now you can fire an asyncio thrift server easily::
 
     import asyncio
-    import thriftpy
-    from aiothrift import create_server
+    import aiothrift
+
+    pingpong_thrift = aiothrift.load('pingpong.thrift', module_name='pingpong_thrift')
 
     class Dispatcher:
         def ping(self):
             return "pong"
 
         async def add(self, a, b):
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             return a + b
 
-    pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
-    loop = asyncio.get_event_loop()
-    server = loop.run_until_complete(create_server(pingpong_thrift.PingPong, Dispatcher(), loop=loop))
-    loop.run_forever()
+    async def main():
+      server = await aiothrift.create_server(pingpong_thrift.PingPong, Dispatcher()))
+      async with server:
+          await server.serve_forever()
+
+    asyncio.run(main())
 
 let's have a look at what the code above does.
 
-1. Frist we import the :mod:`thriftpy` module, which is used to parse a thrift file to a valid python module,
-thanks for the great job done by `thriftpy`, we don't have to generate thrift python sdk files manually.
+1. First we parse a thrift file to a valid python module,
+thanks for the great job done by `thriftpy2`, we don't have to generate thrift python sdk files manually.
 
 2. We create a `Dispatcher` class as the namespace for all thrift rpc functions. Here we define a `ping` method
 which corresponds to the `ping` function defined in ``pingpong.thrift``. You may notice that the `add` method is
@@ -49,7 +52,7 @@ it would scheduled by our thrift server and send the result back to client after
 3. We then create the server by using :func:`~aiothrift.create_server` function, and it returns a :ref:`coroutine <coroutine>`
 instance which can be scheduled by the event loop later.
 
-4. Lastly we call ``loop.run_forever()`` to run the event loop to schedule the server task.
+4. Lastly we call ``asyncio.run(main())`` to run the event loop to schedule the server task.
 
 Just save it as :file:`server.py` and then you can start the thrift server::
 
@@ -61,24 +64,19 @@ It will listening at `localhost:6000` by default.
 Now you'd like to visit the thrift server through a thrift client::
 
     import asyncio
-    import thriftpy
-    from aiothrift import create_connection
+    import aiothrift
 
-    pingpong_thrift = thriftpy.load('pingpong.thrift', module_name='pingpong_thrift')
+    pingpong_thrift = aiothrift.load('pingpong.thrift', module_name='pingpong_thrift')
 
-    loop = asyncio.get_event_loop()
+    async def go():
+        client = await aiothrift.create_pool(pingpong_thrift.PingPong)
+        print(await client.ping())
+        print(await client.add(5, 6))
+        client.close()
+        await client.wait_closed()
 
+    asyncio.run(go())
 
-    async def create_client():
-        conn = await create_connection(pingpong_thrift.PingPong, loop=loop, timeout=10)
-        print(await conn.ping())
-        conn.close()
-
-    loop.run_until_complete(create_client())
-
-
-Look that `create_client` is the client task :ref:`coroutine <coroutine>`, this task would create a connection to the server we've created
-earlier, and make `ping` rpc call, print its result and close the connection.
 
  Save it as :file:`client.py`, and run the client by::
 
