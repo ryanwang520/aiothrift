@@ -1,5 +1,7 @@
 import struct
 
+from io import BytesIO
+from struct import pack, unpack
 from thriftpy2.protocol.exc import TProtocolException
 from thriftpy2.thrift import TType
 
@@ -370,6 +372,57 @@ async def skip(reader, ftype):
             await skip(reader, f_type)
 
 
+class TFramedTransport:
+    """Implement the Twisted framed transport protocol.
+
+    Since most async servers use this including the python2 twisted
+    bindings, this is likely of interest.
+    """
+    def __init__(self, base):
+        self.__base = base
+        self.__read_buffer = BytesIO()
+        self.__write_buffer = BytesIO()
+
+    def read(self, n=-1):
+        if len(self.__read_buffer.getvalue()) == 0:
+            self.readFrame()
+        return self.__read_buffer.read(n)
+
+    async def readFrame(self):
+        buff = await self.__base.readexactly(4)
+        sz, = unpack('!i', buff)
+        self.__read_buffer = BytesIO(await self.__base.readexactly(sz))
+
+    async def readexactly(self, n):
+        now, end = self.__read_buffer.tell(), self.__read_buffer.seek(0, 2)
+        remaining = end - now
+        self.__read_buffer.seek(now)
+
+        if 0 < remaining < n:
+            raise IOError("Tried to read invalid amount from framed transport")
+        elif remaining == 0:
+            await self.readFrame()
+
+        return self.__read_buffer.read(n)
+
+    def write(self, val):
+        self.__write_buffer.write(val)
+
+    async def drain(self):
+        wout = self.__write_buffer.getvalue()
+        wsz = len(wout)
+        self.__write_buffer = BytesIO()
+        buf = pack("!i", wsz) + wout
+        self.__base.write(buf)
+        await self.__base.drain()
+
+    def at_eof(self):
+        return self.__base.at_eof()
+
+    def close(self):
+        return self.__base.close()
+
+
 class TProtocol:
     """
     Base class for thrift protocols, subclass should implement some of the protocol methods,
@@ -377,7 +430,7 @@ class TProtocol:
     """
 
     def __init__(
-        self, trans, strict_read=True, strict_write=True, decode_response=True
+            self, trans, strict_read=True, strict_write=True, decode_response=True
     ):
         self.trans = trans
         self.strict_read = strict_read
