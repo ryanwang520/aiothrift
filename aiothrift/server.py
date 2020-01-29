@@ -15,12 +15,12 @@ class Server:
         self.framed = framed
 
     async def __call__(self, reader, writer):
-        iproto = self.protocol_cls(reader)
-        oproto = self.protocol_cls(writer)
         if self.framed:
             reader = TFramedTransport(reader)
             writer = TFramedTransport(writer)
 
+        iproto = self.protocol_cls(reader)
+        oproto = self.protocol_cls(writer)
         while not reader.at_eof():
             try:
                 with async_timeout.timeout(self.timeout):
