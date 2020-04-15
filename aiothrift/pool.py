@@ -5,7 +5,6 @@ import asyncio
 import contextvars as cv
 
 import collections
-import functools
 
 from .connection import create_connection
 from .log import logger
@@ -74,7 +73,14 @@ class ThriftPool:
         for api in self._service.thrift_services:
             if not hasattr(self, api):
 
-                setattr(self, api, functools.partial(self.execute, api))
+                def make_call(name):
+                    async def call(*args, **kwargs):
+                        task = asyncio.create_task(self.execute(name, *args, **kwargs))
+                        return await task
+
+                    return call
+
+                setattr(self, api, make_call(api))
             else:
                 logger.warning(
                     "api name {0} is conflicted with connection attribute "
