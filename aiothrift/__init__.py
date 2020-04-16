@@ -6,7 +6,7 @@ from .processor import TProcessor
 from .server import Server, create_server
 from .protocol import TBinaryProtocol, TProtocol
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 __all__ = [
     "create_connection",
