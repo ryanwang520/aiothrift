@@ -4,16 +4,21 @@ import async_timeout
 
 from .log import logger
 from .processor import TProcessor
-from .protocol import TBinaryProtocol
+from .protocol import TBinaryProtocol, TFramedTransport
 
 
 class Server:
-    def __init__(self, processor, protocol_cls=TBinaryProtocol, timeout=None):
+    def __init__(self, processor, protocol_cls=TBinaryProtocol, timeout=None, framed=False):
         self.processor = processor
         self.protocol_cls = protocol_cls
         self.timeout = timeout
+        self.framed = framed
 
     async def __call__(self, reader, writer):
+        if self.framed:
+            reader = TFramedTransport(reader)
+            writer = TFramedTransport(writer)
+
         iproto = self.protocol_cls(reader)
         oproto = self.protocol_cls(writer)
         while not reader.at_eof():
@@ -42,6 +47,7 @@ async def create_server(
     address=("127.0.0.1", 6000),
     protocol_cls=TBinaryProtocol,
     timeout=None,
+    framed=False,
     **kw,
 ):
     """ create a thrift server.
@@ -58,6 +64,6 @@ async def create_server(
     host, port = address
     processor = TProcessor(service, handler)
     server = await asyncio.start_server(
-        Server(processor, protocol_cls, timeout=timeout), host, port, **kw
+        Server(processor, protocol_cls, timeout=timeout, framed=framed), host, port, **kw
     )
     return server
