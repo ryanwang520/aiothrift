@@ -385,10 +385,10 @@ class TFramedTransport:
 
     def read(self, n=-1):
         if len(self.__read_buffer.getvalue()) == 0:
-            self.readFrame()
+            self.read_frame()
         return self.__read_buffer.read(n)
 
-    async def readFrame(self):
+    async def read_frame(self):
         buff = await self.__base.readexactly(4)
         sz, = unpack('!i', buff)
         self.__read_buffer = BytesIO(await self.__base.readexactly(sz))
@@ -401,7 +401,7 @@ class TFramedTransport:
         if 0 < remaining < n:
             raise IOError("Tried to read invalid amount from framed transport")
         elif remaining == 0:
-            await self.readFrame()
+            await self.read_frame()
 
         return self.__read_buffer.read(n)
 
