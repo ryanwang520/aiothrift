@@ -4,7 +4,7 @@ import functools
 import async_timeout
 from thriftpy2.thrift import TMessageType
 
-from .protocol import TBinaryProtocol
+from .protocol import TBinaryProtocol, TFramedTransport
 from .util import args2kwargs
 from .errors import ConnectionClosedError, ThriftAppError
 from .log import logger
@@ -16,6 +16,7 @@ async def create_connection(
     *,
     protocol_cls=TBinaryProtocol,
     timeout=None,
+    framed=False,
     **kw,
 ):
     """Create a thrift connection.
@@ -33,6 +34,10 @@ async def create_connection(
     """
     host, port = address
     reader, writer = await asyncio.open_connection(host, port, **kw)
+    if framed:
+        reader = TFramedTransport(reader)
+        writer = TFramedTransport(writer)
+
     iprotocol = protocol_cls(reader)
     oprotocol = protocol_cls(writer)
 
