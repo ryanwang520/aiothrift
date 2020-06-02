@@ -31,6 +31,7 @@ async def create_pool(
     :param minsize: minimal thrift connection, default is 1
     :param maxsize: maximal thrift connection, default is 10
     :param timeout: default timeout for each connection, default is None
+    :param framed: use TFramedTransport, default is False
     :return: :class:`ThriftPool` instance
     """
 
