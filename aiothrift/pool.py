@@ -55,7 +55,7 @@ class ThriftPool:
     """Thrift connection pool.
     """
 
-    def __init__(self, service, address, *, minsize, maxsize, timeout=None, framed):
+    def __init__(self, service, address, *, minsize, maxsize, timeout=None, framed=False):
         assert isinstance(minsize, int) and minsize >= 0, (
             "minsize must be int >= 0",
             minsize,
@@ -77,8 +77,8 @@ class ThriftPool:
         self._cond = asyncio.Condition()
         self._service = service
         self._timeout = timeout
+        self._framed = framed
         self.closed = False
-        self.framed = framed
         self._release_tasks = set()
         self._init_rpc_apis()
 
@@ -223,7 +223,7 @@ class ThriftPool:
 
     def _create_new_connection(self):
         return create_connection(
-            self._service, self._address, timeout=self._timeout, framed=self.framed
+            self._service, self._address, timeout=self._timeout, framed=self._framed
         )
 
     async def _notify_conn_returned(self):
