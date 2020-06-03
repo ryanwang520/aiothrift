@@ -15,7 +15,13 @@ acquired_connection = cv.ContextVar("acquired_connection")
 
 
 async def create_pool(
-    service, address=("127.0.0.1", 6000), *, minsize=1, maxsize=10, timeout=None
+    service,
+    address=("127.0.0.1", 6000),
+    *,
+    minsize=1,
+    maxsize=10,
+    timeout=None,
+    framed=False
 ):
     """
     Create a thrift connection pool. This function is a :ref:`coroutine <coroutine>`.
@@ -25,11 +31,17 @@ async def create_pool(
     :param minsize: minimal thrift connection, default is 1
     :param maxsize: maximal thrift connection, default is 10
     :param timeout: default timeout for each connection, default is None
+    :param framed: use TFramedTransport, default is False
     :return: :class:`ThriftPool` instance
     """
 
     pool = ThriftPool(
-        service, address, minsize=minsize, maxsize=maxsize, timeout=timeout
+        service,
+        address,
+        minsize=minsize,
+        maxsize=maxsize,
+        timeout=timeout,
+        framed=framed,
     )
     try:
         await pool.fill_free(override_min=False)
@@ -44,7 +56,7 @@ class ThriftPool:
     """Thrift connection pool.
     """
 
-    def __init__(self, service, address, *, minsize, maxsize, timeout=None):
+    def __init__(self, service, address, *, minsize, maxsize, timeout=None, framed=False):
         assert isinstance(minsize, int) and minsize >= 0, (
             "minsize must be int >= 0",
             minsize,
@@ -66,6 +78,7 @@ class ThriftPool:
         self._cond = asyncio.Condition()
         self._service = service
         self._timeout = timeout
+        self._framed = framed
         self.closed = False
         self._release_tasks = set()
         self._init_rpc_apis()
@@ -210,7 +223,9 @@ class ThriftPool:
                     self._acquiring -= 1
 
     def _create_new_connection(self):
-        return create_connection(self._service, self._address, timeout=self._timeout)
+        return create_connection(
+            self._service, self._address, timeout=self._timeout, framed=self._framed
+        )
 
     async def _notify_conn_returned(self):
         async with self._cond:
