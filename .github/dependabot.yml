@@ -1,0 +1,15 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: weekly
+    time: "21:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: pytest-asyncio
+    versions:
+    - 0.15.0
+  - dependency-name: black
+    versions:
+    - 20.8b1
