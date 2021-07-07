@@ -37,6 +37,7 @@ pytest-asyncio = "^0.15.1"
 sphinx = "^4.0.3"
 black = "^19.10b0"
 flake8 = "^3.7.9"
+pre-commit = "^2.13.0"
 
 [tool.black]
 target-version = ['py37', 'py38']
