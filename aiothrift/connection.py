@@ -1,5 +1,6 @@
 import asyncio
 import functools
+from collections.abc import Sequence
 
 import async_timeout
 from thriftpy2.thrift import TMessageType
@@ -27,13 +28,30 @@ async def create_connection(
     :param service: a thrift service object
     :param address: a (host, port) tuple
     :param protocol_cls: protocol type, default is :class:`TBinaryProtocol`
-    :param timeout: if specified, would raise `asyncio.TimeoutError`
-        if one rpc call is longer than `timeout`
+    :param timeout: if timeout is a number, would raise `asyncio.TimeoutError`
+        if one rpc call is longer than `timeout` or connection cannot be
+        eatablishd within `timeout`, if timeout is a tuple of two number,
+        each number is corresponding to tcp connection timeout and read timeout of each
+        rpc call.
     :param kw: params related to asyncio.open_connection()
     :return: newly created :class:`ThriftConnection` instance.
     """
+    connection_timeout, read_timeout = None, None
+    if timeout:
+        if isinstance(timeout, (float, int)):
+            connection_timeout, read_timeout = timeout, timeout
+        elif isinstance(timeout, Sequence):
+            if len(timeout) != 2:
+                raise ValueError("timeout should be a sequence of 2 number")
+            connection_timeout, read_timeout = timeout
+        else:
+            raise ValueError("timeout must be a number or tuple of 2 number")
+
     host, port = address
-    reader, writer = await asyncio.open_connection(host, port, **kw)
+    connection_future = asyncio.open_connection(host, port, **kw)
+    reader, writer = await asyncio.wait_for(
+        connection_future, timeout=connection_timeout
+    )
     if framed:
         reader = TFramedTransport(reader)
         writer = TFramedTransport(writer)
@@ -42,7 +60,7 @@ async def create_connection(
     oprotocol = protocol_cls(writer)
 
     return ThriftConnection(
-        service, iprot=iprotocol, oprot=oprotocol, address=address, timeout=timeout
+        service, iprot=iprotocol, oprot=oprotocol, address=address, timeout=read_timeout
     )
 
 
