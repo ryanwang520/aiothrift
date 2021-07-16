@@ -21,18 +21,22 @@ class Server:
 
         iproto = self.protocol_cls(reader)
         oproto = self.protocol_cls(writer)
+        
+        client_addr = writer.get_extra_info('peername')
+        logger.debug(f"client {client_addr} has opened a connection")
+        
         while not reader.at_eof():
             try:
                 with async_timeout.timeout(self.timeout):
                     await self.processor.process(iproto, oproto)
             except ConnectionError:
-                logger.debug("client has closed the connection")
+                logger.debug(f"client {client_addr} has closed the connection")
                 writer.close()
             except asyncio.TimeoutError:
-                logger.debug("timeout when processing the client request")
+                logger.debug(f"timeout when processing the client request from {client_addr}")
                 writer.close()
             except asyncio.IncompleteReadError:
-                logger.debug("client has closed the connection")
+                logger.debug(f"client {client_addr} has closed the connection")
                 writer.close()
             except Exception:
                 # app exception
