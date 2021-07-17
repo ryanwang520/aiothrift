@@ -30,13 +30,13 @@ class Server:
                 with async_timeout.timeout(self.timeout):
                     await self.processor.process(iproto, oproto)
             except ConnectionError:
-                logger.debug(f"client {client_addr} has closed the connection")
+                logger.debug(f"client {client_addr} has closed the connection (connection error)")
                 writer.close()
             except asyncio.TimeoutError:
                 logger.debug(f"timeout when processing the client request from {client_addr}")
                 writer.close()
             except asyncio.IncompleteReadError:
-                logger.debug(f"client {client_addr} has closed the connection")
+                logger.debug(f"client {client_addr} has closed the connection (incomplete read error)")
                 writer.close()
             except Exception:
                 # app exception
