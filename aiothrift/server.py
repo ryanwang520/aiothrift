@@ -41,6 +41,7 @@ class Server:
             logger.exception("unhandled app exception")
         finally:
             writer.close()
+            await writer.wait_closed()
 
 
 async def create_server(
