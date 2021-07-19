@@ -422,6 +422,9 @@ class TFramedTransport:
     def close(self):
         return self.__base.close()
 
+    async def wait_closed(self):
+        return self.__base.wait_closed()
+
 
 class TProtocol:
     """
