@@ -16,6 +16,7 @@ class Server:
 
     async def __call__(self, reader, writer):
         client_addr = writer.get_extra_info('peername')
+        logger.debug(f"client {client_addr} has opened a connection")
 
         if self.framed:
             reader = TFramedTransport(reader)
@@ -24,8 +25,6 @@ class Server:
         iproto = self.protocol_cls(reader)
         oproto = self.protocol_cls(writer)
 
-        logger.debug(f"client {client_addr} has opened a connection")
-        
         try:
             while not reader.at_eof():
                 with async_timeout.timeout(self.timeout):
