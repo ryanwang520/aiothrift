@@ -34,13 +34,12 @@ class Server:
         except asyncio.TimeoutError:
             logger.debug(f"timeout when processing the client request from {client_addr}")
         except asyncio.IncompleteReadError:
-            logger.debug(f"client {client_addr} has closed the connection (asyncio.IncompleteReadError)")
+            logger.debug(f"client {client_addr} has closed the connection")
         except Exception:
             # app exception
             logger.exception("unhandled app exception")
         finally:
             writer.close()
-            await writer.wait_closed()
 
 
 async def create_server(
