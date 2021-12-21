@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aiothrift"
-version = "0.2.5"
+version = "0.2.6"
 description = "Async Thrift server and client"
 authors = ["Ryan Wang <hwwangwang@gmail.com>"]
 license = "MIT"
