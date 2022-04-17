@@ -1,4 +1,5 @@
 import asyncio
+
 import aiothrift
 
 pingpong_thrift = aiothrift.load("pingpong.thrift", module_name="pingpong_thrift")
