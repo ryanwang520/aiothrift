@@ -1,4 +1,5 @@
 import asyncio
+import pytest_asyncio
 import subprocess
 import pytest
 import thriftpy2 as thriftpy
@@ -11,7 +12,7 @@ def test_thrift():
     return thriftpy.load("tests/test.thrift", module_name="test_thrift")
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def _closable():
     conns = []
 
@@ -61,7 +62,7 @@ def server(request):
     return proc
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def pool(test_thrift, create_pool, server):
     pool = await create_pool(test_thrift.Test, server.address)
     return pool
