@@ -21,7 +21,7 @@ async def create_pool(
     minsize=1,
     maxsize=10,
     timeout=None,
-    framed=False
+    framed=False,
 ):
     """
     Create a thrift connection pool. This function is a :ref:`coroutine <coroutine>`.
@@ -53,10 +53,11 @@ async def create_pool(
 
 
 class ThriftPool:
-    """Thrift connection pool.
-    """
+    """Thrift connection pool."""
 
-    def __init__(self, service, address, *, minsize, maxsize, timeout=None, framed=False):
+    def __init__(
+        self, service, address, *, minsize, maxsize, timeout=None, framed=False
+    ):
         assert isinstance(minsize, int) and minsize >= 0, (
             "minsize must be int >= 0",
             minsize,
@@ -124,8 +125,7 @@ class ThriftPool:
             conn.close()
 
     def close(self):
-        """Close all free and in-progress connections and mark pool as closed.
-        """
+        """Close all free and in-progress connections and mark pool as closed."""
         self.closed = True
         conn_num = 0
         while self._pool:

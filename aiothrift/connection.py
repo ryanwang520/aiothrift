@@ -118,7 +118,7 @@ class ThriftConnection:
             raise ConnectionClosedError("Connection closed")
 
         try:
-            with async_timeout.timeout(self.timeout):
+            async with async_timeout.timeout(self.timeout):
                 kw = args2kwargs(
                     getattr(self.service, api + "_args").thrift_spec, *args
                 )

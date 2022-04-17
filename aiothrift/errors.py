@@ -2,7 +2,7 @@ from thriftpy2.thrift import TType
 
 
 class ThriftError(Exception):
-    """ Base Exception defined by `aiothrift` """
+    """Base Exception defined by `aiothrift`"""
 
 
 class ConnectionClosedError(ThriftError):

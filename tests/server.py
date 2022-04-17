@@ -7,9 +7,8 @@ from aiothrift.server import create_server
 pingpong_thrift = thriftpy.load("tests/test.thrift", module_name="test_thrift")
 
 
-@asyncio.coroutine
-def _add(a, b):
-    yield from asyncio.sleep(0)
+async def _add(a, b):
+    await asyncio.sleep(0)
     return a + b
 
 
@@ -17,9 +16,8 @@ class Dispatcher:
     def ping(self):
         return "pong"
 
-    @asyncio.coroutine
-    def add(self, a, b):
-        result = yield from _add(a, b)
+    async def add(self, a, b):
+        result = await _add(a, b)
         return result
 
     def address(self, name):
@@ -29,9 +27,7 @@ class Dispatcher:
 loop = asyncio.get_event_loop()
 
 server = loop.run_until_complete(
-    create_server(
-        pingpong_thrift.Test, Dispatcher(), ("127.0.0.1", 6000), loop=loop, timeout=10
-    )
+    create_server(pingpong_thrift.Test, Dispatcher(), ("127.0.0.1", 6000), timeout=10)
 )
 
 print("server is listening on host {} and port {}".format("127.0.0.1", 6000))
