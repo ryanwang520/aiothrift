@@ -463,7 +463,7 @@ class TBinaryProtocol(TProtocol):
     """Binary implementation of the Thrift protocol driver."""
 
     def skip(self, ttype):
-        skip(self.trans, ttype)
+        await skip(self.trans, ttype)
 
     async def read_message_begin(self):
         api, ttype, seqid = await read_message_begin(
