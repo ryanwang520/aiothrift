@@ -18,6 +18,8 @@ classifiers = [
           'Programming Language :: Python :: 3',
           'Programming Language :: Python :: 3.7',
           'Programming Language :: Python :: 3.8',
+          'Programming Language :: Python :: 3.9',
+          'Programming Language :: Python :: 3.10',
           'Environment :: Web Environment',
           'Intended Audience :: Developers',
           'Topic :: Software Development',
@@ -40,7 +42,7 @@ pre-commit = "^2.13.0"
 flake8 = "^4.0.1"
 
 [tool.black]
-target-version = ['py37', 'py38']
+target-version = ['py37']
 include = '\.pyi?$'
 exclude = '''
 /(

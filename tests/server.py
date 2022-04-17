@@ -27,9 +27,7 @@ class Dispatcher:
 loop = asyncio.get_event_loop()
 
 server = loop.run_until_complete(
-    create_server(
-        pingpong_thrift.Test, Dispatcher(), ("127.0.0.1", 6000), timeout=10
-    )
+    create_server(pingpong_thrift.Test, Dispatcher(), ("127.0.0.1", 6000), timeout=10)
 )
 
 print("server is listening on host {} and port {}".format("127.0.0.1", 6000))

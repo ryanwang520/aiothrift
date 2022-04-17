@@ -8,14 +8,16 @@ from .protocol import TBinaryProtocol, TFramedTransport
 
 
 class Server:
-    def __init__(self, processor, protocol_cls=TBinaryProtocol, timeout=None, framed=False):
+    def __init__(
+        self, processor, protocol_cls=TBinaryProtocol, timeout=None, framed=False
+    ):
         self.processor = processor
         self.protocol_cls = protocol_cls
         self.timeout = timeout
         self.framed = framed
 
     async def __call__(self, reader, writer):
-        client_addr = writer.get_extra_info('peername')
+        client_addr = writer.get_extra_info("peername")
         logger.debug(f"client {client_addr} has opened a connection")
 
         if self.framed:
@@ -30,9 +32,13 @@ class Server:
                 with async_timeout.timeout(self.timeout):
                     await self.processor.process(iproto, oproto)
         except ConnectionError:
-            logger.debug(f"client {client_addr} has closed the connection (ConnectionError)")
+            logger.debug(
+                f"client {client_addr} has closed the connection (ConnectionError)"
+            )
         except asyncio.TimeoutError:
-            logger.debug(f"timeout when processing the client request from {client_addr}")
+            logger.debug(
+                f"timeout when processing the client request from {client_addr}"
+            )
         except asyncio.IncompleteReadError:
             logger.debug(f"client {client_addr} has closed the connection")
         except Exception:
@@ -51,7 +57,7 @@ async def create_server(
     framed=False,
     **kw,
 ):
-    """ create a thrift server.
+    """create a thrift server.
     This function is a :ref:`coroutine <coroutine>`.
 
     :param service: thrift Service
@@ -65,6 +71,9 @@ async def create_server(
     host, port = address
     processor = TProcessor(service, handler)
     server = await asyncio.start_server(
-        Server(processor, protocol_cls, timeout=timeout, framed=framed), host, port, **kw
+        Server(processor, protocol_cls, timeout=timeout, framed=framed),
+        host,
+        port,
+        **kw,
     )
     return server

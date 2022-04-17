@@ -378,6 +378,7 @@ class TFramedTransport:
     Since most async servers use this including the python2 twisted
     bindings, this is likely of interest.
     """
+
     def __init__(self, base):
         self.__base = base
         self.__read_buffer = BytesIO()
@@ -390,7 +391,7 @@ class TFramedTransport:
 
     async def read_frame(self):
         buff = await self.__base.readexactly(4)
-        sz, = unpack('!i', buff)
+        (sz,) = unpack("!i", buff)
         self.__read_buffer = BytesIO(await self.__base.readexactly(sz))
 
     async def readexactly(self, n):
@@ -430,7 +431,7 @@ class TProtocol:
     """
 
     def __init__(
-            self, trans, strict_read=True, strict_write=True, decode_response=True
+        self, trans, strict_read=True, strict_write=True, decode_response=True
     ):
         self.trans = trans
         self.strict_read = strict_read
