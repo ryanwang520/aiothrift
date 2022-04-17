@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aiothrift"
-version = "0.2.6"
+version = "0.2.7"
 description = "Async Thrift server and client"
 authors = ["Ryan Wang <hwwangwang@gmail.com>"]
 license = "MIT"
@@ -61,4 +61,3 @@ exclude = '''
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
-
