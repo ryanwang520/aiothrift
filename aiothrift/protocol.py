@@ -359,7 +359,7 @@ async def skip(reader, ftype):
             await skip(reader, v_type)
 
     elif ftype == TType.MAP:
-        k_type, v_type, sz = read_map_begin(reader)
+        k_type, v_type, sz = await read_map_begin(reader)
         for i in range(sz):
             await skip(reader, k_type)
             await skip(reader, v_type)
