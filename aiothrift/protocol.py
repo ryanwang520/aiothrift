@@ -139,7 +139,13 @@ def write_val(writer, ttype, val, spec=None):
 
     elif ttype == TType.STRUCT:
         for fid in iter(val.thrift_spec):
-            f_spec = val.thrift_spec[fid]
+            if fid is None:
+                continue
+            if type(fid) == tuple:
+                f_spec = fid[1:]
+                fid = fid[0]
+            else:
+                f_spec = val.thrift_spec[fid]
             if len(f_spec) == 3:
                 f_type, f_name, f_req = f_spec
                 f_container_spec = None
